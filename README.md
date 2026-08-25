@@ -94,7 +94,7 @@ cd ..
 # 4. cron curate
 crontab -e
 # add:
-# 0 * * * * cd /home/wijang/www/puraikerto/src && python3 curate.py >> /home/wijang/logs/puraikerto-curate.log 2>&1
+# 0 * * * * cd /var/www/puraikerto/src && python3 curate.py >> /var/log/puraikerto-curate.log 2>&1
 
 # 5. nginx (already configured on the VPS, see docs/nginx.conf)
 ```
