@@ -59,8 +59,9 @@ if ($title && $url) {
         'source' => $_GET['source'] ?? '',
     ], JSON_UNESCAPED_UNICODE);
 
-    $venv_python = '/home/wijang/.hermes/.venv/bin/python3';
+    $venv_python = '/home/wijang/www/puraikerto/src/.venv/bin/python3';
     if (!is_file($venv_python)) {
+        // fallback to system python3 (will likely fail without deps, but better than silent)
         $venv_python = '/usr/bin/python3';
     }
     $src_dir = realpath(__DIR__ . '/../src');
@@ -71,7 +72,7 @@ if ($title && $url) {
     }
 
     $cmd = sprintf(
-        'cd %s && GMI_API_KEY=$(grep ^GMI_API_KEY= ~/.hermes/.env | cut -d= -f2-) %s reason.py --item %s 2>&1',
+        'cd %s && GMI_API_KEY=$(grep ^GMI_API_KEY= ~/.hermes/.env | head -1 | cut -d= -f2-) %s reason.py --item %s 2>&1',
         escapeshellarg($src_dir),
         escapeshellarg($venv_python),
         escapeshellarg($item)
