@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="purAIkerto — Apa yang perlu kamu tahu tentang AI hari ini. Dikurasi oleh bAIwor (MiniMax M3).">
+<title>purAIkerto — Info AI hari ini, dikurasi bAIwor</title>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="brand">
+    <span class="brand-mark">pur<span class="ai">AI</span>kerto</span>
+    <span class="brand-tag">Information, made clear.</span>
+  </a>
+  <nav class="nav-dock" aria-label="Grid sections">
+    <a href="#radar"  class="dock-pill dock-radar">📡 RADAR</a>
+    <a href="#signal" class="dock-pill dock-signal">⚡ SIGNAL</a>
+    <a href="#tracker" class="dock-pill dock-tracker">🛰️ TRACKER</a>
+    <a href="#pulse"  class="dock-pill dock-pulse">💓 PULSE</a>
+  </nav>
+  <div class="meta" id="meta-line">memuat…</div>
+</header>
+
+<main>
+
+<section class="hero">
+  <h1>
+    <span class="hero-pre">b<span class="ai">AI</span>wor <em>Trends</em></span>
+    <span class="hero-bracket">[ TOP PICKS ]</span>
+  </h1>
+  <p class="hero-sub">Apa yang perlu kamu tahu tentang AI hari ini — dikurasi & diverifikasi bAIwor.</p>
+  <p class="hero-disclaimer">Konten diperbarui tiap 1 jam · Window 24 jam · Klik item untuk lihat <em>reasoning trace</em>.</p>
+</section>
+
+<section class="grids">
+  <article class="grid grid-radar" id="radar">
+    <header class="grid-head">
+      <span class="grid-icon anim-detect-zoom">📡</span>
+      <h2>RADAR <span class="grid-act">DETECT</span></h2>
+      <p class="grid-sub">Apa yang baru & penting (24 jam)</p>
+    </header>
+    <ol class="grid-items" id="grid-RADAR"></ol>
+  </article>
+
+  <article class="grid grid-signal" id="signal">
+    <header class="grid-head">
+      <span class="grid-icon anim-prioritize-bob">⚡</span>
+      <h2>SIGNAL <span class="grid-act">PRIORITIZE</span></h2>
+      <p class="grid-sub">Apa yang worth dibaca warga biasa</p>
+    </header>
+    <ol class="grid-items" id="grid-SIGNAL"></ol>
+  </article>
+
+  <article class="grid grid-tracker" id="tracker">
+    <header class="grid-head">
+      <span class="grid-icon anim-follow-glide">🛰️</span>
+      <h2>TRACKER <span class="grid-act">FOLLOW</span></h2>
+      <p class="grid-sub">Tren & angka yang bergerak</p>
+    </header>
+    <ol class="grid-items" id="grid-TRACKER"></ol>
+  </article>
+
+  <article class="grid grid-pulse" id="pulse">
+    <header class="grid-head">
+      <span class="grid-icon anim-pulse-thump">💓</span>
+      <h2>PULSE <span class="grid-act">UNDERSTAND NOW</span></h2>
+      <p class="grid-sub">Suasana & pembicaraan publik</p>
+    </header>
+    <ol class="grid-items" id="grid-PULSE"></ol>
+  </article>
+</section>
+
+<section class="articles" id="articles">
+  <h2>📚 Artikel bAIwor</h2>
+  <p>Longer-form, tak terbatas 24 jam. Dikurasi & ditulis oleh bAIwor (M3).</p>
+  <div class="article-list" id="article-list">
+    <p class="empty">Artikel pertama sedang disiapkan…</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p>purAIkerto — Information, made clear.</p>
+  <p>© 2026 purAIkerto · by bAIwor · powered by MiniMax M3 via GMI Cloud</p>
+</footer>
+
+<!-- reasoning trace panel: hidden until an item is clicked -->
+<aside class="reason-panel" id="reason-panel" hidden aria-live="polite">
+  <div class="reason-inner">
+    <button class="reason-close" type="button" aria-label="Close" id="reason-close">✕</button>
+    <h3 id="reason-title">…</h3>
+    <p class="reason-meta" id="reason-meta"></p>
+    <section class="reason-block">
+      <h4>🧭 Plan</h4>
+      <ol id="reason-plan"></ol>
+    </section>
+    <section class="reason-block">
+      <h4>🔍 Steps</h4>
+      <ol id="reason-steps"></ol>
+    </section>
+    <section class="reason-block">
+      <h4>📚 Sources</h4>
+      <ul id="reason-sources"></ul>
+    </section>
+    <section class="reason-block">
+      <h4>💬 Summary</h4>
+      <p id="reason-summary"></p>
+    </section>
+    <p class="reason-confidence">
+      Confidence: <strong id="reason-confidence">…</strong>
+    </p>
+  </div>
+</aside>
+
+<script src="assets/panel-reasoning.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+*.log
+
+# Environment & secrets
+.env
+.env.local
+.env.production
+.env.*.local
+!.env.example
+
+# API/agent output
+api/cache_feed.json
+api/cache_article.json
+api/cache_reason.json
+src/.cache/
+src/logs/
+!api/cache_feed.example.json
+
+# Editor & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (kalau nanti ada tooling)
+node_modules/
+.npm/
+.yarn/
+
+# Build artifacts
+*.bak
+*.orig
+*.tmp
