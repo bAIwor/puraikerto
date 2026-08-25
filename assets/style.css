@@ -1,6 +1,7 @@
 /* purAIkerto — neo-brutalist, responsive, mobile-first */
 
-:root {
+:root,
+[data-theme="dark"] {
   --bg: #0d1117;
   --bg-2: #161b22;
   --card: #1c2230;
@@ -10,16 +11,38 @@
   --fg-dim: #8b949e;
   --muted: #6e7681;
 
-  --lime: #c5f64a;      /* brand AI */
-  --cyan: #56d4dd;      /* radar */
-  --coral: #ff6b6b;     /* signal */
-  --amber: #ffb454;     /* pulse */
-  --purple: #b48cff;    /* tracker */
+  /* Google brand colors */
+  --lime: #669df6;      /* brand accent / links / high confidence (Google blue, lighter for dark bg) */
+  --cyan: #4285f4;      /* radar (Google blue) */
+  --coral: #ea4335;     /* signal / "AI" text / low confidence (Google red) */
+  --amber: #fbbc05;     /* pulse / mid confidence (Google yellow) */
+  --purple: #34a853;    /* tracker (Google green) */
 
   --shadow-brut: 4px 4px 0 #000;
   --shadow-brut-sm: 2px 2px 0 #000;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-2: #f8f9fa;
+  --card: #ffffff;
+  --card-2: #f1f3f4;
+  --border: #dadce0;
+  --fg: #202124;
+  --fg-dim: #5f6368;
+  --muted: #80868b;
+
+  /* Google brand colors — full saturation reads better on white */
+  --lime: #1a73e8;
+  --cyan: #4285f4;
+  --coral: #ea4335;
+  --amber: #f9ab00;
+  --purple: #1e8e3e;
+
+  --shadow-brut: 4px 4px 0 #000;
+  --shadow-brut-sm: 2px 2px 0 #000;
 }
 
 * { box-sizing: border-box; }
@@ -75,6 +98,20 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   flex-wrap: wrap;
   margin-left: auto;
 }
+.theme-toggle {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  background: var(--card);
+  color: var(--fg);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  box-shadow: var(--shadow-brut-sm);
+}
+.theme-toggle:hover { transform: translate(-1px, -1px); border-color: var(--lime); }
+.theme-toggle:active { transform: translate(1px, 1px); box-shadow: none; }
 .dock-pill {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -191,7 +228,8 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .grid-items .it-title { font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--fg); }
 .grid-items .it-blurb { font-size: 12px; color: var(--fg-dim); }
 .grid-items .it-meta { display: flex; gap: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.grid-items .it-meta .conf { color: var(--lime); }
+.grid-items .it-meta .conf-high { color: var(--lime); }
+.grid-items .it-meta .conf     { color: var(--amber); }
 .grid-items .it-meta .conf-low { color: var(--coral); }
 
 @media (max-width: 900px) {

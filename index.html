@@ -8,6 +8,18 @@
 <title>purAIkerto — Info AI hari ini, dikurasi bAIwor</title>
 <link rel="stylesheet" href="assets/style.css">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<script>
+  // Set theme before first paint to avoid a flash of the wrong theme.
+  (function () {
+    try {
+      var saved = localStorage.getItem('puraikerto-theme');
+      var theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
 </head>
 <body>
 
@@ -22,6 +34,7 @@
     <a href="#tracker" class="dock-pill dock-tracker">🛰️ TRACKER</a>
     <a href="#pulse"  class="dock-pill dock-pulse">💓 PULSE</a>
   </nav>
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Ganti tema terang/gelap">🌙</button>
   <div class="meta" id="meta-line">memuat…</div>
 </header>
 

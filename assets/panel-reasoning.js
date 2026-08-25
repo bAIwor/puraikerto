@@ -38,6 +38,23 @@
     return h;
   }
 
+  // ------- theme toggle -------
+  const themeBtn = document.getElementById('theme-toggle');
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+  function applyThemeIcon() {
+    if (themeBtn) themeBtn.textContent = currentTheme() === 'light' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const next = currentTheme() === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('puraikerto-theme', next); } catch (e) { /* ignore, e.g. private mode */ }
+    applyThemeIcon();
+  }
+  themeBtn?.addEventListener('click', toggleTheme);
+  applyThemeIcon();
+
   // ------- meta line -------
   const meta = document.getElementById('meta-line');
   function setMeta(text) { if (meta) meta.textContent = text; }
@@ -45,7 +62,7 @@
   // ------- grid items -------
   const GRIDS = ['RADAR', 'SIGNAL', 'TRACKER', 'PULSE'];
   function confClass(c) {
-    if (c >= 0.7) return 'conf';
+    if (c >= 0.7) return 'conf-high';
     if (c >= 0.4) return 'conf';
     return 'conf-low';
   }
