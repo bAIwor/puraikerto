@@ -217,11 +217,8 @@ def main() -> int:
     ap.add_argument("--out-dir", type=Path, default=ARTICLE_DIR)
     args = ap.parse_args()
 
-    global ARTICLE_DIR
-    ARTICLE_DIR = args.out_dir
-
     if args.list:
-        articles = list_articles()
+        articles = list_articles()  # uses module-level ARTICLE_DIR
         print(json.dumps([{
             "id": a["id"],
             "title": a["title"],
@@ -233,9 +230,14 @@ def main() -> int:
         return 0
 
     if args.delete:
-        ok = delete_article(args.delete)
+        ok = delete_article(args.delete)  # uses module-level ARTICLE_DIR
         print(f"deleted: {ok}")
         return 0 if ok else 1
+
+    # allow --out-dir override (only used for save_article path)
+    if args.out_dir and str(args.out_dir) != str(ARTICLE_DIR):
+        global ARTICLE_DIR
+        ARTICLE_DIR = args.out_dir
 
     client = GMIClient()
     item = None
