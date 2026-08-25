@@ -1,10 +1,10 @@
-# Concept — purAIkerto for MiniMaxathon
+# Concept — purAIkerto
 
-> Concept & positioning of purAIkerto as a submission for MiniMaxathon (Track 1 — Reasoning). Mirrored from the Obsidian note `puraikerto/KONSEP-KONTES.md`.
+> The thinking behind purAIkerto: what it is, why it works the way it does, and the principles that keep it honest.
 
 ---
 
-## Positioning (one sentence)
+## Positioning
 
 > **purAIkerto = "What you need to know about AI today" — curated by bAIwor, refreshed every 24 hours, with a transparent reasoning trace.**
 
@@ -12,17 +12,23 @@
 
 ---
 
-## Three promises fulfilled (Track 1 judging criteria)
+## Why the reasoning trace is the core feature
 
-| Promise | Implementation |
-|---|---|
-| **Holds a plan** | Click an item → the "bAIwor explains this" panel opens. The reasoning trace shows a 3–5 step plan, the execution of each step, and an honest outcome (including "not sure" / "source didn't confirm" / "only 1 source, weak"). |
-| **Coding tools that finish the job** | M3 (via GMI Cloud) actually *executes*: scrape RSS feeds, call the M3 API, parse JSON, write the cache. The backend running on the VPS is proof the job got finished, not just answered. |
-| **Fact check themselves** | Every item compares at least 2 sources (primary + secondary RSS feed). The output includes an explicit **confidence level** with justification. Users can click any source to verify themselves. |
+Most AI products give you an answer. Good ones let you ask "why?" Some let you re-run with a different model. Almost none show you what they did to get there.
+
+purAIkerto does. Every item on every grid has a trace attached:
+
+1. **A plan** (3–5 steps) — what the agent intends to check
+2. **The execution** — what it found at each step, including weak results and "source didn't confirm"
+3. **Sources** — links to where it looked
+4. **A confidence score** (0.0–1.0) — how sure it is, honestly
+5. **A summary** — one or two sentences for the user
+
+This isn't a debugging tool. It's the product. The user-facing reason it exists: when an AI says "this is important", you should be able to see why — and disagree if you want.
 
 ---
 
-## Four-grid structure (kept from the previous version)
+## Four-grid structure
 
 | Grid | Action | Subtitle | Content |
 |---|---|---|---|
@@ -31,7 +37,7 @@
 | 🛰️ **TRACKER** | FOLLOW | What's moving | Trends & moving numbers — funding, stats, prices |
 | 💓 **PULSE** | UNDERSTAND NOW | What's happening | Public discussion — ethics, community reaction, opinion |
 
-**Dynamic**: each grid's composition changes every hour based on what's important (rolling 24h window).
+**Dynamic**: each grid's composition changes every hour based on what's important (rolling 24h window). Items drop off after 24h unless promoted to an article.
 
 ---
 
@@ -39,13 +45,13 @@
 
 Still the soul of purAIkerto. Punakawan from Banyumas (Bawor/Bagong), speaks Bahasa Indonesia with Banyumasan flavor when context fits, transparent & honest. Full identity: [`docs/SOUL-bAIwor.md`](SOUL-bAIwor.md).
 
-**What's new**: bAIwor no longer just "displays" — it **asks, thinks, and explains why it thinks that way**. The reasoning trace is the "internal dialog" opened up to the user.
+**What's new in this version**: bAIwor no longer just "displays" — it **asks, thinks, and explains why it thinks that way**. The reasoning trace is the "internal dialog" opened up to the user.
 
 ---
 
 ## Data sources
 
-- **M3 web search** via GMI Cloud (free for 14 days during the campaign)
+- **M3 web search** via GMI Cloud
 - **Public RSS feeds** (AI-focused): Hacker News, MIT Tech Review, OpenAI blog, Anthropic news, DeepMind, arXiv cs.AI
 - 24-hour cache in `api/cache_feed.json`. Items drop off the grid after 24h (unless promoted to an article).
 
@@ -72,24 +78,21 @@ AGENT (Python + M3 via GMI Cloud)
 
 ---
 
-## Timeline (14-day sprint)
+## Design choices
 
-| Day | Target |
-|---|---|
-| 1–2 | Repo, structure, README, M3 integration test, basic branding |
-| 3–7 | Core engine: curation + reasoning trace generator |
-| 8–10 | Frontend: 4 grids + interactive reasoning panel + animations |
-| 11–12 | Articles/blog section + UI polish |
-| 13–14 | Testing, bug fixes, demo video, submission form |
-
-Principle: "ship first, perfect later". 14 days is the max — finishing earlier is fine.
+- **9 items per grid** is the cap, not a target. If only 4 are good, show 4. Don't pad.
+- **No fabrication**: if a source doesn't mention something, the trace says `unknown`. Confidence reflects what was actually found.
+- **HTML-first frontend**: no framework, no build step. The page is just files. Easy to read, easy to fork.
+- **PHP backend**: only because it's already running on the VPS. Could be replaced with anything that serves JSON.
+- **Cron over queues**: simpler. Hourly rolling is enough for a 24h window.
+- **MIT license**: do whatever you want with it.
 
 ---
 
-## Out of scope (not done)
+## What's out of scope
 
-- Switching domain/subdomain
-- Adding new WhatsApp/Telegram bots
-- Paid X/Reddit/IG APIs
+- Switching domain / subdomain
+- Paid social APIs (X, Reddit, IG)
+- User accounts / login (public site)
+- A new WhatsApp or Telegram bot
 - Rebuilding bAIwor from scratch (only extending)
-- Adding user/login (not needed, public site)

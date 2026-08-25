@@ -59,14 +59,16 @@ Role in purAIkerto: **curator + verifier**. It picks 9 items per grid per day, v
 
 ---
 
-## Notes for the MiniMaxathon contest
+## How this connects to the rest of the project
 
-This project targets Track 1 — Reasoning. The "transparent, shows-reasoning" traits above directly meet the judges' criteria:
+The "transparent, shows-reasoning" traits above aren't aspirational — they're the design contract. They map directly to features in the codebase:
 
-- "Holds a plan" → plan JSON array in the trace output
-- "Coding tools that finish the job" → `src/curate.py` + `src/reason.py` actually execute
-- "Fact check themselves" → 2+ sources compared, explicit confidence level
+- "Holds a plan" → `reason.py` returns a `plan` JSON array in every trace
+- "Coding tools that finish the job" → `src/curate.py` and `src/reason.py` actually execute (scrape, call M3, parse JSON, write to cache)
+- "Fact check themselves" → every trace compares 2+ sources and includes an explicit confidence level
+
+If you change the rules in this file, the agent's output will drift. Keep them in sync.
 
 ---
 
-*Adapted from the existing bAIwor SOUL at `/home/wijang/www/baiwor/SOUL.md`, restructured for the purAIkerto context.*
+*This SOUL is the basis for the bAIwor agent. The persona is the same across other surfaces (chat, WhatsApp), but the curation-specific rules above only apply to purAIkerto.*

@@ -1,6 +1,8 @@
 # Setup — purAIkerto (production on VPS)
 
-> Full setup guide for deploying purAIkerto to a VPS. Assumes Ubuntu + nginx + PHP-FPM + Python 3.11+, similar to the SIMDATA setup.
+> Full setup guide for deploying purAIkerto to a VPS. Assumes Ubuntu + nginx + PHP-FPM + Python 3.11+.
+
+> **Note**: this guide uses `/var/www/puraikerto` as the example path. Adjust to your own server layout — pick a directory your web user can read.
 
 ---
 
@@ -14,7 +16,7 @@ python3 --version
 # optional: pm2, cron
 ```
 
-If anything is missing, install via the package manager. Example:
+If anything is missing, install via the package manager:
 
 ```bash
 sudo apt update
@@ -26,20 +28,25 @@ sudo apt install -y nginx php-fpm python3 python3-pip python3-venv
 ## 2. Clone the repo
 
 ```bash
-cd /home/wijang/www
+sudo mkdir -p /var/www
+sudo chown $USER:www-data /var/www
+cd /var/www
 git clone https://github.com/bAIwor/puraikerto.git
 cd puraikerto
 ```
-
-(Repo is hosted under the **bAIwor** organization, not a personal account — per the `wijang.md` convention.)
 
 ---
 
 ## 3. Environment variables
 
-`GMI_API_KEY` is loaded from `~/.hermes/.env` (already exists on the VPS). `curate.py` and `reason.py` read it via `python-dotenv` + `os.environ`.
+`GMI_API_KEY` is required. The expected location is `~/.hermes/.env` (a common convention), but `curate.py` and `reason.py` read it via `python-dotenv` + `os.environ`, so any of these work:
 
-Make sure this line is in `~/.hermes/.env`:
+- `~/.hermes/.env` (the default lookup)
+- `~/.env`
+- A project-local `.env` (copy from `.env.example`)
+- An exported shell variable
+
+Make sure the line is set:
 
 ```
 GMI_API_KEY=gmi_xxxxx...
@@ -51,7 +58,7 @@ Verify:
 
 ```bash
 grep ^GMI_API_KEY= ~/.hermes/.env | head -1
-# test
+# test connectivity
 bash scripts/test-m3.sh
 ```
 
@@ -60,9 +67,9 @@ bash scripts/test-m3.sh
 ## 4. Python dependencies
 
 ```bash
-cd /home/wijang/www/puraikerto/src
+cd /var/www/puraikerto/src
 pip install --user -r requirements.txt
-# or with venv (recommended):
+# or with venv (recommended for production):
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -77,7 +84,7 @@ Add a site config (or include it in the existing file):
 ```nginx
 server {
     server_name puraikerto.my.id;
-    root /home/wijang/www/puraikerto;
+    root /var/www/puraikerto;
     index index.html;
 
     # security headers
@@ -133,10 +140,10 @@ Add:
 
 ```cron
 # purAIkerto curation — rolling 24h window
-0 * * * * cd /home/wijang/www/puraikerto/src && /usr/bin/python3 curate.py --cache /home/wijang/www/puraikerto/api/cache_feed.json >> /home/wijang/logs/puraikerto-curate.log 2>&1
+0 * * * * cd /var/www/puraikerto/src && /usr/bin/python3 curate.py --cache /var/www/puraikerto/api/cache_feed.json >> /var/log/puraikerto-curate.log 2>&1
 
 # purAIkerto reasoning trace — top 3 per grid, every 6 hours
-0 */6 * * * cd /home/wijang/www/puraikerto/src && /usr/bin/python3 reason.py --from-cache RADAR --limit 3 --out /home/wijang/www/puraikerto/api/cache_reason.json >> /home/wijang/logs/puraikerto-reason.log 2>&1
+0 */6 * * * cd /var/www/puraikerto/src && /usr/bin/python3 reason.py --from-cache RADAR --limit 3 --out /var/www/puraikerto/api/cache_reason.json >> /var/log/puraikerto-reason.log 2>&1
 ```
 
 > Note: `crontab` does not load `~/.bashrc` — the `GMI_API_KEY` env var must be exported inline or set in the crontab line.
@@ -150,14 +157,14 @@ Add:
 bash scripts/test-m3.sh
 
 # 2. run curation (manual, dry-run first)
-cd /home/wijang/www/puraikerto/src
+cd /var/www/puraikerto/src
 python3 curate.py --dry-run
 
 # 3. run curation (live, will call M3)
 python3 curate.py
 
 # 4. check output
-cat /home/wijang/www/puraikerto/api/cache_feed.json | head -50
+cat /var/www/puraikerto/api/cache_feed.json | head -50
 
 # 5. reason about RADAR top 3
 python3 reason.py --from-cache RADAR --limit 3
@@ -169,17 +176,17 @@ curl -s "http://localhost/api/reason.php?title=test&url=https://example.com" | h
 
 ---
 
-## 8. Cloudflare
+## 8. Cloudflare (or any reverse proxy)
 
-The `baiworweb` tunnel is already configured to route `puraikerto.my.id`. Make sure the `puraikerto.my.id` ingress in the Cloudflare dashboard points to the VPS nginx (port 80 / 443).
+The example assumes the domain `puraikerto.my.id` resolves to the VPS (port 80/443) via Cloudflare or similar. Configure your DNS / tunnel to point there.
 
 ---
 
 ## 9. Monitoring
 
 Useful log files:
-- `/home/wijang/logs/puraikerto-curate.log` — output of the curate cron
-- `/home/wijang/logs/puraikerto-reason.log` — output of the reason cron
+- `/var/log/puraikerto-curate.log` — output of the curate cron
+- `/var/log/puraikerto-reason.log` — output of the reason cron
 - nginx access/error: `/var/log/nginx/`
 
 Quick health check:

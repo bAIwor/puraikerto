@@ -2,7 +2,6 @@
 
 > **"What you need to know about AI today"** — curated by bAIwor, transparent because the reasoning trace is open.
 
-[![Track](https://img.shields.io/badge/MiniMaxathon-Track_1_Reasoning-blueviolet)](https://www.gmicloud.ai/minimax-week)
 [![Model](https://img.shields.io/badge/MiniMax-M3-ff6b6b)](https://www.gmicloud.ai)
 [![Provider](https://img.shields.io/badge/GMI_Cloud-OpenAI_Compatible-4ecdc4)](https://api.gmi-serving.com)
 [![License](https://img.shields.io/badge/license-MIT-green)](#license)
@@ -19,17 +18,7 @@ Four live grids (RADAR / SIGNAL / TRACKER / PULSE) refresh on a 24-hour window, 
 
 ---
 
-## Track 1: Reasoning — how this project meets the criteria
-
-| Promise | Implementation |
-|---|---|
-| **Holds a plan** | Reasoning trace in an interactive panel — M3's step-by-step plan is visible (not a black box). |
-| **Coding tools that finish the job** | M3 doesn't just think — it *executes*: scrape, store in 24h cache, format grid, generate articles. The backend running on the VPS is proof the job got finished, not just answered. |
-| **Fact check themselves** | Every item has at least 2 sources compared. Output includes a **confidence level** with justification. Users can click any source to verify themselves. |
-
----
-
-## Architecture
+## How it works
 
 ```
 ┌─────────────────────────────────────────┐
@@ -58,10 +47,7 @@ Four live grids (RADAR / SIGNAL / TRACKER / PULSE) refresh on a 24-hour window, 
 └─────────────────────────────────────────┘
 ```
 
-**Why M3 via GMI Cloud?**
-- Free for 14 days during the MiniMaxathon campaign
-- OpenAI-compatible API (easy to integrate)
-- Prompt caching enabled → efficient for repeated reasoning
+M3 is called via GMI Cloud's OpenAI-compatible API. Prompt caching is enabled, so repeated reasoning on similar items is efficient.
 
 ---
 
@@ -84,13 +70,14 @@ Full identity in [`docs/SOUL-bAIwor.md`](docs/SOUL-bAIwor.md).
 ## Quick start (development)
 
 ### Prerequisites
+
 - Linux VPS with PHP 8.x + Python 3.11+
-- GMI Cloud API key (free during campaign)
+- GMI Cloud API key
 - Domain pointed to the VPS (default: `puraikerto.my.id`)
 
 ### Setup
 
-```bash
+```
 # 1. clone
 git clone https://github.com/bAIwor/puraikerto.git
 cd puraikerto
@@ -155,11 +142,11 @@ puraikerto/
 
 ---
 
-## Track 1 Reasoning — example reasoning trace
+## Reasoning trace example
 
-Example for the item "GPT-5 rumored release date":
+Click any item → the panel shows what bAIwor did to verify it:
 
-```json
+```
 {
   "title": "GPT-5 rumored to launch Q4 2026",
   "trace": [
@@ -175,23 +162,20 @@ Example for the item "GPT-5 rumored release date":
 }
 ```
 
-Users can click any step to see the detail. **The reasoning trace is an audit trail, not magic.**
+The trace is an audit trail — you can see exactly what the agent did, why, and what it concluded. If you disagree, click any source to verify.
 
 ---
 
 ## Contributing & license
 
-This project was made for MiniMaxathon (Track 1 — Reasoning). After the contest, the license is MIT — free to use, modify, and distribute.
-
-See [`LICENSE`](LICENSE) for full terms.
+MIT licensed — free to use, modify, and distribute. See [`LICENSE`](LICENSE) for full terms.
 
 ---
 
 ## Links
 
-- 🌐 Live: https://puraikerto.my.id
-- 📰 MiniMaxathon: https://www.gmicloud.ai/minimax-week
-- 🤖 MiniMax M3: https://www.gmicloud.ai
+- 🌐 Live: [https://puraikerto.my.id](https://puraikerto.my.id)
+- 🤖 MiniMax M3: [https://www.gmicloud.ai](https://www.gmicloud.ai)
 - 🏛️ bAIwor identity: [`docs/SOUL-bAIwor.md`](docs/SOUL-bAIwor.md)
 
 ---
