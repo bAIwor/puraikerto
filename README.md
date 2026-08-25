@@ -1,6 +1,6 @@
 # purAIkerto
 
-> **"Apa yang perlu kamu tahu tentang AI hari ini"** — dikurasi oleh bAIwor, transparan karena reasoning trace-nya terbuka.
+> **"What you need to know about AI today"** — curated by bAIwor, transparent because the reasoning trace is open.
 
 [![Track](https://img.shields.io/badge/MiniMaxathon-Track_1_Reasoning-blueviolet)](https://www.gmicloud.ai/minimax-week)
 [![Model](https://img.shields.io/badge/MiniMax-M3-ff6b6b)](https://www.gmicloud.ai)
@@ -9,36 +9,34 @@
 
 ---
 
-## 🎯 Apa ini
+## What this is
 
-**purAIkerto** adalah intel aggregator harian untuk kabar AI — dirancang untuk masyarakat Purwokerto dan nasional yang penasaran dengan dunia AI tapi tidak mau overwhelmed oleh ratusan berita acak per hari.
+**purAIkerto** is a daily intel aggregator for AI news — built for the Purwokerto community (Indonesia) and anyone curious about AI who doesn't want to be overwhelmed by hundreds of random posts per day.
 
-Yang membedakannya dari portal berita AI lain: **bAIwor (powered by MiniMax M3) bukan hanya memilih dan menampilkan berita. Dia mikir, dan kamu bisa lihat proses mikirnya.**
+What sets it apart from other AI news portals: **bAIwor (powered by MiniMax M3) doesn't just pick and display news. It thinks — and you can watch the thinking.**
 
-Empat grid utama (RADAR / SIGNAL / TRACKER / PULSE) berubah setiap 24 jam, dikurasi otomatis dari multi-sumber. Klik item mana saja → panel **"bAIwor explains this"** terbuka, menampilkan **reasoning trace** step-by-step: rencana → cek sumber A → cek sumber B → cross-check → kesimpulan + confidence level.
+Four live grids (RADAR / SIGNAL / TRACKER / PULSE) refresh on a 24-hour window, curated automatically from multiple sources. Click any item → a **"bAIwor explains this"** panel opens, showing a **reasoning trace** step by step: plan → check source A → check source B → cross-check → conclusion + confidence level.
 
 ---
 
-## 🧠 Track 1: Reasoning — kenapa project ini menang (atau tidak)
+## Track 1: Reasoning — how this project meets the criteria
 
-Kriteria hakim kontes:
-
-| Janji | Implementasi |
+| Promise | Implementation |
 |---|---|
-| **Holds a plan** | Reasoning trace di panel interaktif — rencana M3 langkah demi langkah kelihatan (bukan black-box). |
-| **Coding tools that finish the job** | M3 bukan cuma mikir — dia *execute*: scrape, simpan ke cache 24 jam, format grid, generate artikel. Backend di VPS adalah bukti "the job got finished". |
-| **Fact check themselves** | Setiap item punya minimal 2 sumber yang dibandingkan. Output menyertakan **confidence level** + justifikasi. User bisa klik sumber untuk verifikasi sendiri. |
+| **Holds a plan** | Reasoning trace in an interactive panel — M3's step-by-step plan is visible (not a black box). |
+| **Coding tools that finish the job** | M3 doesn't just think — it *executes*: scrape, store in 24h cache, format grid, generate articles. The backend running on the VPS is proof the job got finished, not just answered. |
+| **Fact check themselves** | Every item has at least 2 sources compared. Output includes a **confidence level** with justification. Users can click any source to verify themselves. |
 
 ---
 
-## 🏗️ Arsitektur
+## Architecture
 
 ```
 ┌─────────────────────────────────────────┐
 │  FRONTEND (puraikerto.my.id)            │
-│  - index.html (4 grid + artikel)        │
+│  - index.html (4 grids + articles)      │
 │  - panel-reasoning.js (expandable trace)│
-│  - assets/ (logo, animasi, branding)    │
+│  - assets/ (logo, animations, branding) │
 └────────────────┬────────────────────────┘
                  │
                  ▼
@@ -53,53 +51,53 @@ Kriteria hakim kontes:
                  ▼
 ┌─────────────────────────────────────────┐
 │  AGENT (MiniMax M3 via GMI Cloud)       │
-│  - curate.py: pilih 9 item/grid/24 jam  │
-│  - reason.py: rencana + cross-check     │
+│  - curate.py: pick 9 items/grid/24h     │
+│  - reason.py: plan + cross-check        │
 │  - article.py: longer-form (on demand)  │
-│  - cron tiap 1 jam: rolling update      │
+│  - cron hourly: rolling update          │
 └─────────────────────────────────────────┘
 ```
 
-**Kenapa M3 via GMI Cloud?**
-- Free 14 hari masa kampanye MiniMaxathon
-- OpenAI-compatible API (gampang diintegrate)
-- Prompt caching aktif → efisien untuk reasoning berulang
+**Why M3 via GMI Cloud?**
+- Free for 14 days during the MiniMaxathon campaign
+- OpenAI-compatible API (easy to integrate)
+- Prompt caching enabled → efficient for repeated reasoning
 
 ---
 
-## 🤖 Persona: bAIwor
+## Persona: bAIwor
 
-bAIwor = transformasi Bawor/Bagong (Punakawan, maskot Kabupaten Banyumas) menjadi AI agent. Berbahasa Indonesia dengan sentuhan Banyumasan saat konteks cocok. Sifat: jujur, lugas, hangat, **transparan** (mau nunjukin reasoning-nya, bukan kasih jawaban tanpa jejak).
+bAIwor = a transformation of **Bawor/Bagong** (Punakawan, the official mascot of Banyumas Regency, Indonesia) into an AI agent. Speaks Bahasa Indonesia with Banyumasan flavor when context fits. Personality: honest, straightforward, warm, **transparent** (shows the reasoning instead of giving black-box answers).
 
-Identitas lengkap ada di [`docs/SOUL-bAIwor.md`](docs/SOUL-bAIwor.md).
-
----
-
-## 🛠️ Sumber data
-
-- **M3 web search** (via GMI Cloud) — penemuan awal, lookup fakta terbaru
-- **RSS publik** AI-relevant: Hacker News (front page + AI tag), MIT Tech Review AI, OpenAI blog, Anthropic news, DeepMind blog, arXiv cs.AI
-- Cache 24 jam di `api/cache_feed.json`. Item turun dari grid setelah 24 jam (kecuali masuk artikel/blog).
+Full identity in [`docs/SOUL-bAIwor.md`](docs/SOUL-bAIwor.md).
 
 ---
 
-## 🚀 Quick start (development)
+## Data sources
 
-### Prasyarat
-- VPS Linux dengan PHP 8.x + Python 3.11+
-- API key GMI Cloud (gratis masa kampanye)
-- Domain yang point ke VPS (default: `puraikerto.my.id`)
+- **M3 web search** (via GMI Cloud) — initial discovery, fact lookups
+- **Public RSS feeds** (AI-focused): Hacker News (front page + AI tag), MIT Tech Review AI, OpenAI blog, Anthropic news, DeepMind blog, arXiv cs.AI
+- 24-hour cache in `api/cache_feed.json`. Items drop off the grid after 24h (unless promoted to articles).
+
+---
+
+## Quick start (development)
+
+### Prerequisites
+- Linux VPS with PHP 8.x + Python 3.11+
+- GMI Cloud API key (free during campaign)
+- Domain pointed to the VPS (default: `puraikerto.my.id`)
 
 ### Setup
 
 ```bash
 # 1. clone
-git clone https://github.com/wiJang/puraikerto.git
+git clone https://github.com/bAIwor/puraikerto.git
 cd puraikerto
 
 # 2. env
 cp .env.example .env
-# edit .env, isi GMI_API_KEY
+# edit .env, fill in GMI_API_KEY
 
 # 3. python deps
 cd src
@@ -108,42 +106,42 @@ cd ..
 
 # 4. cron curate
 crontab -e
-# tambah:
+# add:
 # 0 * * * * cd /home/wijang/www/puraikerto/src && python3 curate.py >> /home/wijang/logs/puraikerto-curate.log 2>&1
 
-# 5. nginx (sudah dikonfigurasikan di VPS, lihat docs/nginx.conf)
+# 5. nginx (already configured on the VPS, see docs/nginx.conf)
 ```
 
-Lihat [`docs/SETUP.md`](docs/SETUP.md) untuk detail lengkap.
+See [`docs/SETUP.md`](docs/SETUP.md) for full details.
 
 ---
 
-## 📂 Struktur repo
+## Repo layout
 
 ```
 puraikerto/
-├── README.md                   ← kamu di sini
+├── README.md                   ← you are here
 ├── LICENSE
-├── .env.example                ← template env (no secrets)
+├── .env.example                ← env template (no secrets)
 ├── .gitignore
-├── src/                        ← agent Python
+├── src/                        ← Python agent
 │   ├── curate.py               ← M3 curation engine
 │   ├── reason.py               ← M3 reasoning trace generator
 │   ├── article.py              ← longer-form generator
-│   ├── gmi_client.py           ← wrapper API GMI Cloud
+│   ├── gmi_client.py           ← GMI Cloud API wrapper
 │   ├── prompts/                ← prompt templates
 │   └── requirements.txt
-├── api/                        ← backend PHP
+├── api/                        ← PHP backend
 │   ├── feed.php                ← grid content endpoint
 │   ├── reason.php              ← reasoning trace endpoint
-│   ├── article.php             ← artikel blog endpoint
+│   ├── article.php             ← articles endpoint
 │   └── cache_feed.json         ← 24h rolling cache
 ├── assets/                     ← branding & UI
 │   ├── logo.svg
 │   ├── style.css               ← neo-brutalist base
 │   ├── panel-reasoning.js      ← interactive trace
 │   └── animations.css
-├── docs/                       ← dokumentasi
+├── docs/                       ← documentation
 │   ├── SETUP.md
 │   ├── SOUL-bAIwor.md
 │   ├── ARCHITECTURE.md
@@ -152,44 +150,44 @@ puraikerto/
 │   ├── deploy.sh               ← git pull + restart
 │   └── test-m3.sh              ← test M3 connectivity
 └── .github/
-    └── workflows/              ← CI/CD (opsional)
+    └── workflows/              ← CI/CD (optional)
 ```
 
 ---
 
-## 📊 Track 1 Reasoning — contoh reasoning trace
+## Track 1 Reasoning — example reasoning trace
 
-Contoh untuk item "GPT-5 rumored release date":
+Example for the item "GPT-5 rumored release date":
 
 ```json
 {
   "title": "GPT-5 rumored to launch Q4 2026",
   "trace": [
-    {"step": 1, "action": "Identify claim", "result": "Tanggal rilis GPT-5 diklaim Q4 2026 oleh sumber X"},
-    {"step": 2, "action": "Check source A (OpenAI blog)", "result": "Tidak ada pengumuman resmi. Pernyataan CEO hanya bilang 'in development'"},
-    {"step": 3, "action": "Check source B (Reuters tech)", "result": "Laporan internal sebut 'Q1 2026 sangat kecil kemungkinannya, sumber tidak pasti'"},
-    {"step": 4, "action": "Check source C (HN diskusi)", "result": "Spekulasi berdasarkan pola rilis model sebelumnya, bukan fakta"},
-    {"step": 5, "action": "Cross-check", "result": "3/3 sumber tidak konfirmasi Q4 2026"},
-    {"step": 6, "action": "Conclusion", "result": "KLaim ini spekulatif. Saya tampilkan dengan confidence LOW (35%)"}
+    {"step": 1, "action": "Identify claim", "result": "The claim is a release date of Q4 2026 from source X"},
+    {"step": 2, "action": "Check source A (OpenAI blog)", "result": "No official announcement. CEO statement only said 'in development'"},
+    {"step": 3, "action": "Check source B (Reuters tech)", "result": "Internal report says 'Q1 2026 very unlikely, source uncertain'"},
+    {"step": 4, "action": "Check source C (HN discussion)", "result": "Speculation based on prior model release pattern, not fact"},
+    {"step": 5, "action": "Cross-check", "result": "3/3 sources do not confirm Q4 2026"},
+    {"step": 6, "action": "Conclusion", "result": "Claim is speculative. Displayed with confidence LOW (35%)"}
   ],
   "confidence": 0.35,
   "sources": ["openai.com/blog", "reuters.com/tech", "news.ycombinator.com"]
 }
 ```
 
-User bisa klik step mana saja untuk lihat detail. **Reasoning trace = jejak audit, bukan sulap.**
+Users can click any step to see the detail. **The reasoning trace is an audit trail, not magic.**
 
 ---
 
-## 🤝 Kontribusi & lisensi
+## Contributing & license
 
-Project ini dibuat untuk MiniMaxathon (Track 1 — Reasoning). Setelah kontes, license MIT — bebas dipakai, dimodifikasi, didistribusikan.
+This project was made for MiniMaxathon (Track 1 — Reasoning). After the contest, the license is MIT — free to use, modify, and distribute.
 
-Lihat [`LICENSE`](LICENSE) untuk detail.
+See [`LICENSE`](LICENSE) for full terms.
 
 ---
 
-## 🔗 Links
+## Links
 
 - 🌐 Live: https://puraikerto.my.id
 - 📰 MiniMaxathon: https://www.gmicloud.ai/minimax-week
@@ -198,4 +196,4 @@ Lihat [`LICENSE`](LICENSE) untuk detail.
 
 ---
 
-*Dibuat dengan 🎭 oleh **wijang** + 🤖 oleh **bAIwor (MiniMax M3 via GMI Cloud)***
+*Built with 🎭 by **wijang** + 🤖 by **bAIwor (MiniMax M3 via GMI Cloud)***

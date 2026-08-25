@@ -1,20 +1,20 @@
 # Setup — purAIkerto (production on VPS)
 
-> Panduan setup lengkap untuk deploy purAIkerto ke VPS. Asumsi: VPS sudah jalan Ubuntu + nginx + PHP-FPM + Python 3.11+, sama seperti setup SIMDATA.
+> Full setup guide for deploying purAIkerto to a VPS. Assumes Ubuntu + nginx + PHP-FPM + Python 3.11+, similar to the SIMDATA setup.
 
 ---
 
-## 1. Prasyarat di VPS
+## 1. VPS prerequisites
 
 ```bash
-# cek
+# check
 nginx -v
 php -v
 python3 --version
-# opsional: pm2, cron
+# optional: pm2, cron
 ```
 
-Kalau ada yang kurang, install via package manager. Contoh:
+If anything is missing, install via the package manager. Example:
 
 ```bash
 sudo apt update
@@ -23,7 +23,7 @@ sudo apt install -y nginx php-fpm python3 python3-pip python3-venv
 
 ---
 
-## 2. Clone repo
+## 2. Clone the repo
 
 ```bash
 cd /home/wijang/www
@@ -31,15 +31,15 @@ git clone https://github.com/bAIwor/puraikerto.git
 cd puraikerto
 ```
 
-(Repo ini di-upload di organisasi **bAIwor**, bukan akun personal — sesuai konvensi `wijang.md`.)
+(Repo is hosted under the **bAIwor** organization, not a personal account — per the `wijang.md` convention.)
 
 ---
 
-## 3. Setup environment variables
+## 3. Environment variables
 
-`GMI_API_KEY` harus di-load dari `~/.hermes/.env` (sudah ada di VPS). `curate.py` dan `reason.py` baca via `python-dotenv` + `os.environ`.
+`GMI_API_KEY` is loaded from `~/.hermes/.env` (already exists on the VPS). `curate.py` and `reason.py` read it via `python-dotenv` + `os.environ`.
 
-Pastikan baris ini ada di `~/.hermes/.env`:
+Make sure this line is in `~/.hermes/.env`:
 
 ```
 GMI_API_KEY=gmi_xxxxx...
@@ -47,7 +47,7 @@ GMI_BASE_URL=https://api.gmi-serving.com/v1
 GMI_MODEL=MiniMaxAI/MiniMax-M3
 ```
 
-Verifikasi:
+Verify:
 
 ```bash
 grep ^GMI_API_KEY= ~/.hermes/.env | head -1
@@ -62,7 +62,7 @@ bash scripts/test-m3.sh
 ```bash
 cd /home/wijang/www/puraikerto/src
 pip install --user -r requirements.txt
-# atau pake venv (recommended):
+# or with venv (recommended):
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -70,9 +70,9 @@ pip install -r requirements.txt
 
 ---
 
-## 5. Konfigurasi nginx
+## 5. Nginx config
 
-Tambah site config (atau include dari file existing):
+Add a site config (or include it in the existing file):
 
 ```nginx
 server {
@@ -95,7 +95,7 @@ server {
         try_files $uri $uri/ /api/$uri.php?$args;
         location ~ \.php$ {
             include fastcgi_params;
-            fastcgi_pass unix:/run/php/php8.5-fpm.sock;  # sesuaikan versi
+            fastcgi_pass unix:/run/php/php8.5-fpm.sock;  # adjust version
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         }
     }
@@ -129,34 +129,34 @@ sudo systemctl reload nginx
 crontab -e
 ```
 
-Tambah:
+Add:
 
 ```cron
 # purAIkerto curation — rolling 24h window
 0 * * * * cd /home/wijang/www/puraikerto/src && /usr/bin/python3 curate.py --cache /home/wijang/www/puraikerto/api/cache_feed.json >> /home/wijang/logs/puraikerto-curate.log 2>&1
 
-# purAIkerto reasoning trace — top 3 per grid, sekali per 6 jam
+# purAIkerto reasoning trace — top 3 per grid, every 6 hours
 0 */6 * * * cd /home/wijang/www/puraikerto/src && /usr/bin/python3 reason.py --from-cache RADAR --limit 3 --out /home/wijang/www/puraikerto/api/cache_reason.json >> /home/wijang/logs/puraikerto-reason.log 2>&1
 ```
 
-> Catatan: `crontab` tidak load `~/.bashrc` — env `GMI_API_KEY` harus di-export inline atau diset di crontab.
+> Note: `crontab` does not load `~/.bashrc` — the `GMI_API_KEY` env var must be exported inline or set in the crontab line.
 
 ---
 
-## 7. Test pertama kali
+## 7. First-time test
 
 ```bash
 # 1. test M3 connectivity
 bash scripts/test-m3.sh
 
-# 2. run curation (manual, dry-run dulu)
+# 2. run curation (manual, dry-run first)
 cd /home/wijang/www/puraikerto/src
 python3 curate.py --dry-run
 
 # 3. run curation (live, will call M3)
 python3 curate.py
 
-# 4. cek output
+# 4. check output
 cat /home/wijang/www/puraikerto/api/cache_feed.json | head -50
 
 # 5. reason about RADAR top 3
@@ -171,15 +171,15 @@ curl -s "http://localhost/api/reason.php?title=test&url=https://example.com" | h
 
 ## 8. Cloudflare
 
-Sudah ada tunnel `baiworweb` yang route `puraikerto.my.id`. Pastikan ingress `puraikerto.my.id` di dashboard Cloudflare point ke VPS nginx (port 80 / 443).
+The `baiworweb` tunnel is already configured to route `puraikerto.my.id`. Make sure the `puraikerto.my.id` ingress in the Cloudflare dashboard points to the VPS nginx (port 80 / 443).
 
 ---
 
 ## 9. Monitoring
 
-Log file yang berguna:
-- `/home/wijang/logs/puraikerto-curate.log` — output cron curate
-- `/home/wijang/logs/puraikerto-reason.log` — output cron reason
+Useful log files:
+- `/home/wijang/logs/puraikerto-curate.log` — output of the curate cron
+- `/home/wijang/logs/puraikerto-reason.log` — output of the reason cron
 - nginx access/error: `/var/log/nginx/`
 
 Quick health check:
@@ -193,10 +193,10 @@ curl -s https://puraikerto.my.id/api/feed.php | python3 -c "import json,sys;d=js
 
 ## Troubleshooting
 
-| Gejala | Fix |
+| Symptom | Fix |
 |---|---|
-| `GMIError: GMI_API_KEY not set` | Pastikan baris di `~/.hermes/.env`, dan script bisa baca. Cron kadang butuh `env` di crontab line. |
-| `cache_feed.json` 0 grids | Cek log curate. M3 mungkin timeout — tambah timeout di `gmi_client.py`. |
-| 403 Forbidden | Index.html belum ada di root / `try_files` di nginx salah. |
-| 502 Bad Gateway | PHP-FPM tidak jalan. `systemctl --user status php8.5-fpm` (cek user scope). |
-| Reasoning panel stuck loading | Cek `/api/reason.php` bisa di-call manual, cek `shell_exec` enabled di `php.ini`. |
+| `GMIError: GMI_API_KEY not set` | Make sure the line is in `~/.hermes/.env` and the script can read it. Cron sometimes needs `env` on the crontab line. |
+| `cache_feed.json` has 0 grids | Check the curate log. M3 may be timing out — increase the timeout in `gmi_client.py`. |
+| 403 Forbidden | `index.html` is missing from the root, or `try_files` in nginx is wrong. |
+| 502 Bad Gateway | PHP-FPM is not running. `systemctl --user status php8.5-fpm` (check user scope). |
+| Reasoning panel stuck loading | Check `/api/reason.php` can be called manually, and `shell_exec` is enabled in `php.ini`. |
