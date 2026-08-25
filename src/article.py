@@ -81,7 +81,7 @@ SYSTEM_PROMPT = (
     "→ apa yang bisa dilakukan/dilihat pembaca (1 paragraf) → kesimpulan singkat. "
     "Pakai markdown headings (## / ###), bold untuk istilah penting, list kalau perlu. "
     "Panjang: 400-700 kata. "
-    "WAJIB jujur: kalau ada不确定性, tulis 'belum jelas' atau 'perlu verifikasi'. "
+    "WAJIB jujur: kalau ada ketidakpastian, tulis 'belum jelas' atau 'perlu verifikasi'. "
     "JANGAN mengarang fakta. Kalau ragu, confidence < 0.7. "
     "Output JSON object dengan key: "
     "  title (string) — judul artikel (max 80 char) "
