@@ -76,9 +76,9 @@
 
 <section class="articles" id="articles">
   <h2>📚 Artikel bAIwor</h2>
-  <p>Longer-form, tak terbatas 24 jam. Dikurasi & ditulis oleh bAIwor (M3).</p>
+  <p>Longer-form, tak terbatas 24 jam. Dikurasi & ditulis oleh bAIwor (M3). Klik judul untuk baca.</p>
   <div class="article-list" id="article-list">
-    <p class="empty">Artikel pertama sedang disiapkan…</p>
+    <p class="empty">Memuat artikel…</p>
   </div>
 </section>
 
@@ -116,6 +116,21 @@
     </p>
   </div>
 </aside>
+
+<!-- article view panel: hidden until an article is clicked -->
+<article class="article-panel" id="article-panel" hidden>
+  <div class="article-panel-inner">
+    <button class="reason-close" type="button" aria-label="Close" id="article-close">✕</button>
+    <h1 id="article-title">…</h1>
+    <p class="article-meta" id="article-meta"></p>
+    <div class="article-body" id="article-body"></div>
+    <section class="reason-block">
+      <h4>📚 Sources</h4>
+      <ul id="article-sources"></ul>
+    </section>
+    <p class="article-confidence">Confidence: <strong id="article-confidence">…</strong></p>
+  </div>
+</article>
 
 <script src="assets/panel-reasoning.js" defer></script>
 </body>
