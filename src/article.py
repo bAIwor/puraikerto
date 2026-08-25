@@ -209,17 +209,15 @@ def pick_from_cache() -> dict | None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    # only declare global after no other name use in this scope
     ap.add_argument("--topic", help="generate article on a specific topic")
     ap.add_argument("--from-cache", action="store_true", help="pick item from cache_feed.json")
     ap.add_argument("--list", action="store_true", help="list existing articles")
     ap.add_argument("--delete", metavar="ID", help="delete article by id")
     ap.add_argument("--grid", default="manual", help="grid name (for metadata)")
-    ap.add_argument("--out-dir", type=Path, default=ARTICLE_DIR)
     args = ap.parse_args()
 
     if args.list:
-        articles = list_articles()  # uses module-level ARTICLE_DIR
+        articles = list_articles()
         print(json.dumps([{
             "id": a["id"],
             "title": a["title"],
@@ -231,14 +229,9 @@ def main() -> int:
         return 0
 
     if args.delete:
-        ok = delete_article(args.delete)  # uses module-level ARTICLE_DIR
+        ok = delete_article(args.delete)
         print(f"deleted: {ok}")
         return 0 if ok else 1
-
-    # allow --out-dir override (only used for save_article path)
-    global ARTICLE_DIR
-    if args.out_dir and str(args.out_dir) != str(ARTICLE_DIR):
-        ARTICLE_DIR = args.out_dir
 
     client = GMIClient()
     item = None
