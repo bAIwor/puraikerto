@@ -521,83 +521,118 @@
     }
   }
 
-  // ------- article panel -------
-  const ap = document.getElementById('article-panel');
-  const aClose = document.getElementById('article-close');
-  const atitle = document.getElementById('article-title');
-  const ameta = document.getElementById('article-meta');
-  const abody = document.getElementById('article-body');
-  const asources = document.getElementById('article-sources');
-  const aconf = document.getElementById('article-confidence');
-
-  function hideArticle() {
-    if (ap) ap.hidden = true;
-    document.body.style.overflow = '';
-  }
-  aClose?.addEventListener('click', hideArticle);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hideArticle();
-  });
-
+  // ------- article accordion inline -------
   async function openArticle(card) {
+    const isAlreadyOpen = card.classList.contains('is-open');
+
+    // Close any other open article cards smoothly
+    document.querySelectorAll('.article-card.is-open').forEach((el) => {
+      el.classList.remove('is-open');
+      const oldDrawer = el.querySelector('.article-inline-drawer');
+      if (oldDrawer) {
+        oldDrawer.classList.remove('is-expanded');
+        setTimeout(() => oldDrawer.remove(), 250);
+      }
+    });
+
+    // If clicking currently open card, toggle it closed
+    if (isAlreadyOpen) return;
+
+    card.classList.add('is-open');
+
     const id = card.dataset.id;
     const slug = card.dataset.slug;
     const qs = new URLSearchParams();
     if (id) qs.set('id', id);
     else if (slug) qs.set('slug', slug);
 
-    atitle.textContent = '…';
-    ameta.textContent = '';
-    abody.innerHTML = '<p class="reason-loading" style="font-family:var(--font-mono);font-size:12px;color:var(--lime);">&gt; bAIwor: memuat isi artikel lengkap<span class="type-cursor">▋</span></p>';
-    asources.innerHTML = '';
-    aconf.textContent = '…';
-    ap.hidden = false;
-    document.body.style.overflow = 'hidden';
+    // Create inline container inside the clicked card
+    const drawer = document.createElement('div');
+    drawer.className = 'article-inline-drawer';
+    drawer.innerHTML = `
+      <div class="inline-drawer-inner">
+        <div class="reason-loading" style="font-family:var(--font-mono);font-size:11px;color:var(--lime);">
+          &gt; bAIwor: memuat isi artikel lengkap & verifikasi rujukan<span class="type-cursor">▋</span>
+        </div>
+      </div>
+    `;
+    card.appendChild(drawer);
+
+    // Trigger smooth accordion expansion
+    requestAnimationFrame(() => {
+      drawer.classList.add('is-expanded');
+    });
 
     try {
       const r = await fetch(API('/api/article.php?' + qs.toString()), { credentials: 'omit' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const a = await r.json();
-      atitle.textContent = a.title || '(tanpa judul)';
-      const date = a.created_at ? new Date(a.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '';
-      ameta.innerHTML = `
-        <span>oleh ${escapeHtml(a.author || 'bAIwor')}</span>
-        ${date ? `<span> · </span><span>${date}</span>` : ''}
-        <span> · </span><span>${a.read_minutes || 3} min baca</span>
-        ${a.grid_origin ? `<span> · </span><span class="src">dari grid ${escapeHtml(a.grid_origin)}</span>` : ''}
-        <span> · </span><span class="skip-hint" style="color:var(--muted);font-style:italic;">[klik untuk lewati animasi]</span>
-      `;
 
+      if (!card.classList.contains('is-open')) return; // user closed before arrival
+
+      const date = a.created_at ? new Date(a.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '';
       const targetConf = typeof a.confidence === 'number' ? Math.round(a.confidence * 100) : 75;
       const tone = (a.confidence || 0.7) >= 0.7 ? 'var(--lime)' : (a.confidence || 0.5) >= 0.4 ? 'var(--amber)' : 'var(--coral)';
-      aconf.style.color = tone;
 
-      // Animate confidence
+      const rawBody = a.body || a.summary || '';
+      const paragraphs = rawBody.split(/\n\n+/).filter(p => p.trim());
+
+      drawer.innerHTML = `
+        <div class="inline-drawer-inner">
+          <div class="inline-meta-bar">
+            <span>oleh ${escapeHtml(a.author || 'bAIwor')}</span>
+            ${date ? `<span>·</span><span>${date}</span>` : ''}
+            <span>·</span>
+            <span>${a.read_minutes || 3} min baca</span>
+            ${a.grid_origin ? `<span>·</span><span class="src">dari grid ${escapeHtml(a.grid_origin)}</span>` : ''}
+            <span class="skip-hint">[klik untuk lewati animasi]</span>
+          </div>
+
+          <div class="reason-confidence">
+            <span class="rc-label">Tingkat Keyakinan</span>
+            <strong class="article-rc-num" style="color:${tone}">0%</strong>
+            <span class="rc-bar" aria-hidden="true"><span class="article-rc-fill" style="width:0%;background:${tone}"></span></span>
+          </div>
+
+          <div class="article-body-stream"></div>
+
+          <section class="reason-block">
+            <h4>Sumber Rujukan</h4>
+            <ul class="article-sources-stream"></ul>
+          </section>
+        </div>
+      `;
+
+      const fillEl = drawer.querySelector('.article-rc-fill');
+      const numEl = drawer.querySelector('.article-rc-num');
+      const bodyEl = drawer.querySelector('.article-body-stream');
+      const sourcesEl = drawer.querySelector('.article-sources-stream');
+
+      // 1. Animate confidence
+      if (fillEl) fillEl.style.width = `${targetConf}%`;
       let curConf = 0;
       const confTimer = setInterval(() => {
         if (curConf < targetConf) {
-          curConf = Math.min(targetConf, curConf + 5);
-          aconf.textContent = `${curConf}%`;
+          curConf = Math.min(targetConf, curConf + Math.ceil(targetConf / 15) || 1);
+          if (numEl) numEl.textContent = `${curConf}%`;
         } else {
-          aconf.textContent = `${targetConf}%`;
+          if (numEl) numEl.textContent = `${targetConf}%`;
           clearInterval(confTimer);
         }
       }, 25);
 
-      const rawBody = a.body || a.summary || '';
-      const paragraphs = rawBody.split(/\n\n+/).filter(p => p.trim());
-      abody.innerHTML = '';
-
       let isArticleSkipped = false;
 
-      // Stream article paragraphs with human typewriter rhythm
+      // 2. Stream article paragraphs with human typewriter rhythm
       async function streamArticle() {
         for (const p of paragraphs) {
-          if (isArticleSkipped || ap.hidden) return;
+          if (isArticleSkipped || !drawer.isConnected) return;
           const pEl = document.createElement('div');
           pEl.style.marginBottom = '14px';
           pEl.style.lineHeight = '1.7';
-          abody.appendChild(pEl);
+          pEl.style.fontSize = '14px';
+          pEl.style.color = 'var(--fg)';
+          bodyEl.appendChild(pEl);
 
           // Type paragraph text
           const cursor = document.createElement('span');
@@ -608,7 +643,7 @@
           let i = 0;
           await new Promise((resolve) => {
             function tick() {
-              if (isArticleSkipped || ap.hidden) {
+              if (isArticleSkipped || !drawer.isConnected) {
                 cursor.remove();
                 pEl.innerHTML = md(p);
                 resolve();
@@ -618,13 +653,13 @@
                 const char = p[i];
                 pEl.insertBefore(document.createTextNode(char), cursor);
                 i++;
-                let delay = 10;
-                if (char === '.' || char === '?' || char === '!') delay = 25;
-                else if (char === ',' || char === ':') delay = 18;
+                let delay = 14;
+                if (char === '.' || char === '?' || char === '!') delay = 32;
+                else if (char === ',' || char === ':') delay = 22;
                 setTimeout(tick, delay);
               } else {
                 cursor.remove();
-                pEl.innerHTML = md(p); // parse bold/links after finished
+                pEl.innerHTML = md(p); // parse markdown bold/links after finishing
                 resolve();
               }
             }
@@ -635,8 +670,8 @@
         }
 
         // Render sources
-        if (!isArticleSkipped && !ap.hidden) {
-          asources.innerHTML = (a.sources || []).map(s => {
+        if (!isArticleSkipped && drawer.isConnected && sourcesEl) {
+          sourcesEl.innerHTML = (a.sources || []).map(s => {
             const safe = escapeHtml(s);
             const isUrl = /^https?:\/\//i.test(s);
             return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
@@ -646,26 +681,37 @@
 
       function instantArticle() {
         isArticleSkipped = true;
-        aconf.textContent = `${targetConf}%`;
-        abody.innerHTML = md(rawBody);
-        asources.innerHTML = (a.sources || []).map(s => {
-          const safe = escapeHtml(s);
-          const isUrl = /^https?:\/\//i.test(s);
-          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-        }).join('') || '<li class="empty">tidak ada sumber</li>';
+        if (numEl) numEl.textContent = `${targetConf}%`;
+        if (fillEl) fillEl.style.width = `${targetConf}%`;
+        if (bodyEl) bodyEl.innerHTML = md(rawBody);
+        if (sourcesEl) {
+          sourcesEl.innerHTML = (a.sources || []).map(s => {
+            const safe = escapeHtml(s);
+            const isUrl = /^https?:\/\//i.test(s);
+            return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+          }).join('') || '<li class="empty">tidak ada sumber</li>';
+        }
       }
 
       streamArticle();
 
-      // Click inside panel to skip animation immediately
-      ap.onclick = (e) => {
-        if (e.target.closest('a') || e.target.closest('button')) return;
+      // Click inside drawer to skip animation immediately
+      drawer.onclick = (e) => {
+        if (e.target.closest('a')) return;
         instantArticle();
       };
 
     } catch (e) {
       console.error(e);
-      abody.innerHTML = `<p class="reason-loading" style="color:var(--coral)">gagal: ${escapeHtml(e.message)}</p>`;
+      if (card.classList.contains('is-open')) {
+        drawer.innerHTML = `
+          <div class="inline-drawer-inner">
+            <p class="reason-loading" style="color:var(--coral);font-family:var(--font-mono);font-size:11px;">
+              [!] gagal: ${escapeHtml(e.message)}
+            </p>
+          </div>
+        `;
+      }
     }
   }
 

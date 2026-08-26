@@ -512,12 +512,38 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   flex-direction: column;
   gap: 6px;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.15s ease;
 }
 .article-card:hover { transform: translate(-1px, -1px); box-shadow: var(--shadow-solid-sm); border-color: var(--lime); }
+.article-card.is-open {
+  grid-column: 1 / -1;
+  border-color: var(--lime);
+  background: color-mix(in srgb, var(--lime) 6%, var(--card));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  cursor: default;
+}
 .article-card h3 { font-size: 16px; margin: 0; }
+.article-card.is-open h3 { font-size: 19px; color: var(--lime); }
 .article-card .by { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .article-card p { margin: 4px 0 6px; color: var(--fg-dim); font-size: 13px; }
+
+/* ---------- article inline accordion drawer ---------- */
+.article-inline-drawer {
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px dashed color-mix(in srgb, var(--lime) 40%, var(--border));
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, transform 0.35s ease;
+  overflow: hidden;
+  cursor: default;
+}
+.article-inline-drawer.is-expanded {
+  max-height: 5000px;
+  opacity: 1;
+  transform: translateY(0);
+}
 .empty { color: var(--muted); font-style: italic; }
 
 /* grid tag pill on article card */
