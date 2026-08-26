@@ -247,33 +247,6 @@
     }
   }
 
-  // ------- reason panel -------
-  const panel = document.getElementById('reason-panel');
-  const closeBtn = document.getElementById('reason-close');
-  const titleEl = document.getElementById('reason-title');
-  const metaEl = document.getElementById('reason-meta');
-  const planEl = document.getElementById('reason-plan');
-  const stepsEl = document.getElementById('reason-steps');
-  const sourcesEl = document.getElementById('reason-sources');
-  const summaryEl = document.getElementById('reason-summary');
-  const confEl = document.getElementById('reason-confidence');
-  const confBar = document.getElementById('reason-confidence-bar');
-
-  function showPanel() {
-    if (panel) { panel.hidden = false; document.body.style.overflow = 'hidden'; }
-  }
-  function hidePanel() {
-    if (panel) { panel.hidden = true; }
-    const ap = document.getElementById('article-panel');
-    if (ap) ap.hidden = true;
-    document.body.style.overflow = '';
-  }
-  closeBtn?.addEventListener('click', hidePanel);
-  document.getElementById('article-close')?.addEventListener('click', hidePanel);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hidePanel();
-  });
-
   function outcomeClass(o) {
     const s = (o || '').toLowerCase();
     if (s.includes('ok') || s.includes('confirm') || s.includes('setuju') || s.includes('cocok') || s.includes('valid') || s.includes('dikonfirmasi')) return 'ok';
@@ -282,9 +255,11 @@
     return 'unknown';
   }
 
-  function renderTrace(trace, fallbackTitle, fallbackUrl) {
-    titleEl.textContent = trace.item_title || fallbackTitle || '…';
-    const srcList = (trace.sources || []).map((s) => `<li>${escapeHtml(s)}</li>`).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
+  function renderInlineTrace(container, trace, fallbackTitle, fallbackUrl) {
+    const c = typeof trace.confidence === 'number' ? trace.confidence : 0;
+    const pct = Math.round(c * 100);
+    const tone = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
+
     const planList = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">tidak ada plan</li>';
     const stepsList = (trace.steps || []).map((s) => `
       <li>
@@ -292,46 +267,82 @@
         ${escapeHtml(s.detail || '')}
         <span class="step-outcome ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
       </li>`).join('') || '<li class="empty">tidak ada step</li>';
+    const srcList = (trace.sources || []).map((s) => {
+      const safe = escapeHtml(s);
+      const isUrl = /^https?:\/\//i.test(s);
+      return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+    }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
 
-    metaEl.innerHTML = `
-      <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer">buka sumber ↗</a>
-      · model ${escapeHtml(trace.model || 'm3')}
-      · ${(trace.steps || []).length} step
+    container.innerHTML = `
+      <div class="inline-drawer-inner">
+        <div class="inline-meta-bar">
+          <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">buka sumber asli ↗</a>
+          <span>·</span>
+          <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
+          <span>·</span>
+          <span>${(trace.steps || []).length} langkah verifikasi</span>
+        </div>
+
+        <div class="reason-confidence">
+          <span class="rc-label">Tingkat Keyakinan</span>
+          <strong style="color:${tone}">${pct}%</strong>
+          <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:${pct}%;background:${tone}"></span></span>
+        </div>
+
+        <section class="reason-block">
+          <h4><span class="rb-num">1</span> Rencana</h4>
+          <ol>${planList}</ol>
+        </section>
+
+        <section class="reason-block">
+          <h4><span class="rb-num">2</span> Langkah & Hasil</h4>
+          <ol>${stepsList}</ol>
+        </section>
+
+        <section class="reason-block">
+          <h4><span class="rb-num">3</span> Sumber</h4>
+          <ul>${srcList}</ul>
+        </section>
+
+        <section class="reason-block">
+          <h4><span class="rb-num">4</span> Kesimpulan</h4>
+          <p class="summary-text">${escapeHtml(trace.summary || '—')}</p>
+        </section>
+      </div>
     `;
-    planEl.innerHTML = planList;
-    stepsEl.innerHTML = stepsList;
-    sourcesEl.innerHTML = srcList;
-    summaryEl.textContent = trace.summary || '—';
-    const c = typeof trace.confidence === 'number' ? trace.confidence : 0;
-    const tone = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
-    confEl.textContent = `${Math.round(c * 100)}%`;
-    confEl.style.color = tone;
-    if (confBar) {
-      confBar.style.width = `${Math.round(c * 100)}%`;
-      confBar.style.background = tone;
-    }
-  }
-
-  function showLoading(title, url) {
-    titleEl.textContent = title;
-    metaEl.innerHTML = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">buka sumber ↗</a> · <span class="reason-loading">bAIwor sedang memeriksa<span class="thinking-dots"></span></span>`;
-    planEl.innerHTML = '';
-    stepsEl.innerHTML = '<li class="reason-loading">menyusun rencana pemeriksaan…</li>';
-    sourcesEl.innerHTML = '';
-    summaryEl.textContent = '';
-    confEl.textContent = '…';
-    confEl.style.color = '';
-    if (confBar) confBar.style.width = '0';
-    showPanel();
   }
 
   async function openItem(li) {
+    const isAlreadyOpen = li.classList.contains('is-open');
+
+    // Close any other open items in any grid
+    document.querySelectorAll('.grid-items li.is-open').forEach((el) => {
+      el.classList.remove('is-open');
+      const drawer = el.querySelector('.inline-reason-drawer');
+      if (drawer) drawer.remove();
+    });
+
+    // If clicking the currently open item, toggle it closed
+    if (isAlreadyOpen) return;
+
+    li.classList.add('is-open');
+
     const title = li.dataset.title;
     const url = li.dataset.url;
     const summary = li.dataset.summary;
     const source = li.dataset.source;
     const grid = li.dataset.grid;
-    showLoading(title, url);
+
+    // Create inline container inside the clicked li
+    const drawer = document.createElement('div');
+    drawer.className = 'inline-reason-drawer';
+    drawer.innerHTML = `
+      <div class="inline-drawer-inner">
+        <div class="reason-loading">bAIwor sedang memeriksa & menyusun rencana verifikasi<span class="thinking-dots"></span></div>
+      </div>
+    `;
+    li.appendChild(drawer);
+
     try {
       const qs = new URLSearchParams({ title, url, summary, source, grid });
       const r = await fetch(API('/api/reason.php?' + qs.toString()), { credentials: 'omit' });
@@ -340,10 +351,14 @@
         throw new Error(`HTTP ${r.status}: ${txt.slice(0, 200)}`);
       }
       const trace = await r.json();
-      renderTrace(trace, title, url);
+      if (li.classList.contains('is-open')) {
+        renderInlineTrace(drawer, trace, title, url);
+      }
     } catch (e) {
       console.error(e);
-      stepsEl.innerHTML = `<li class="reason-loading" style="color:var(--coral)">gagal: ${escapeHtml(e.message)}</li>`;
+      if (li.classList.contains('is-open')) {
+        drawer.innerHTML = `<div class="inline-drawer-inner"><p class="reason-loading" style="color:var(--coral)">gagal: ${escapeHtml(e.message)}</p></div>`;
+      }
     }
   }
 
