@@ -62,7 +62,7 @@ Still the soul of purAIkerto. Punakawan from Banyumas (Bawor/Bagong), speaks Bah
 ```
 FRONTEND (puraikerto.my.id)
    index.html (4 grids + articles)
-   assets/style.css (neo-brutalist)
+   assets/style.css (bAIwor theme)
    assets/panel-reasoning.js (interactive trace)
    ↓
 BACKEND (VPS, nginx + PHP-FPM)

@@ -125,7 +125,7 @@ puraikerto/
 │   └── cache_feed.json         ← 24h rolling cache
 ├── assets/                     ← branding & UI
 │   ├── logo.svg
-│   ├── style.css               ← neo-brutalist base
+│   ├── style.css               ← bAIwor theme (dark/light)
 │   ├── panel-reasoning.js      ← interactive trace
 │   └── animations.css
 ├── docs/                       ← documentation
