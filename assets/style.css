@@ -4,11 +4,11 @@
 [data-theme="vintage"],
 [data-theme="dark"],
 [data-theme="light"] {
-  /* Vintage Financial Terminal palette (from btcfundflow.vercel.app) */
+  /* Vintage Financial Terminal palette (from btcfundflow.vercel.app + #d2d4dc card surface) */
   --bg: #e4ded3;
-  --bg-2: #eae5d8;
-  --card: #eae5d8;
-  --card-2: #ded8ca;
+  --bg-2: #d2d4dc;
+  --card: #d2d4dc;
+  --card-2: #c4c6cf;
   --border: #111111;
   --fg: #111111;
   --fg-dim: #2d2d2d;
@@ -280,7 +280,7 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   font-variant-numeric: tabular-nums;
 }
 .grid-items li:hover {
-  background: #ded8ca;
+  background: #c4c6cf;
   border-color: #111111;
 }
 .grid-items li:hover::before { color: #111111; }
@@ -390,7 +390,7 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .inline-drawer-inner .reason-confidence {
   margin: 4px 0 6px;
   padding: 8px 12px;
-  background: #f4f0e6;
+  background: #d2d4dc;
   border: 1.5px solid #111111;
   border-radius: 4px;
   display: flex;
@@ -402,8 +402,8 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .inline-drawer-inner .reason-confidence .rc-bar {
   flex: 1;
   height: 8px;
-  background: #ded8ca;
-  border: 1px solid #111111;
+  background: #ffffff;
+  border: 1.5px solid #111111;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -459,7 +459,7 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   line-height: 1.6;
   padding: 10px 12px;
   margin-bottom: 8px;
-  background: #f4f0e6;
+  background: #d2d4dc;
   border: 1.5px solid #111111;
   border-radius: 4px;
   display: flex;
@@ -485,21 +485,21 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   font-weight: 800;
   padding: 3px 8px;
   border-radius: 3px;
-  background: #e4ded3;
+  background: #ffffff;
   color: #111111;
   border: 1.5px solid #111111;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .inline-drawer-inner .reason-block .step-outcome.ok {
-  background: #e4ded3;
+  background: #ffffff;
   color: #111111;
   border-color: #111111;
 }
 .inline-drawer-inner .reason-block .step-outcome.weak,
 .inline-drawer-inner .reason-block .step-outcome.no,
 .inline-drawer-inner .reason-block .step-outcome.unknown {
-  background: #e4ded3;
+  background: #ffffff;
   color: #111111;
   border-color: #111111;
 }
@@ -509,7 +509,7 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   line-height: 1.65;
   color: #111111;
   padding: 14px 16px;
-  background: #f4f0e6;
+  background: #d2d4dc;
   border: 1.5px solid #111111;
   border-left: 5px solid #111111;
   border-radius: 4px;
