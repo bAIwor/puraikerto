@@ -76,6 +76,7 @@ class GMIClient:
         base_url: str | None = None,
         model: str | None = None,
         timeout: int = 60,
+        max_retries_override: int | None = None,
     ) -> None:
         self.api_key = api_key or os.environ.get("GMI_API_KEY")
         if not self.api_key:
@@ -85,6 +86,9 @@ class GMIClient:
         self.base_url = (base_url or os.environ.get("GMI_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
         self.model = model or os.environ.get("GMI_MODEL") or DEFAULT_MODEL
         self.timeout = timeout
+        # max_retries_override: set to 1 for on-demand browser calls (fail fast),
+        # leave None for cron calls (default 4 retries in chat())
+        self.max_retries_override = max_retries_override
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -93,7 +97,7 @@ class GMIClient:
                 "User-Agent": "purAIkerto/0.1 (+https://puraikerto.my.id)",
             }
         )
-        log.info("GMIClient ready model=%s base=%s", self.model, self.base_url)
+        log.info("GMIClient ready model=%s base=%s max_retries=%s", self.model, self.base_url, max_retries_override or "default")
 
     def chat(
         self,
@@ -110,6 +114,10 @@ class GMIClient:
         under load. Without retry a single 429 silently leaves a grid stale.
         Honours the Retry-After header when the server sends one.
         """
+        # instance-level override wins (e.g. --max-retries 1 for browser calls)
+        if self.max_retries_override is not None:
+            max_retries = self.max_retries_override
+
         payload: dict = {
             "model": self.model,
             "messages": [m.__dict__ for m in messages],

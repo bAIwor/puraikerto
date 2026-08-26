@@ -158,6 +158,25 @@ def generate_trace(client: GMIClient, item: dict) -> ReasoningTrace:
     if isinstance(sources_raw, list):
         trace.sources = [str(x).strip() for x in sources_raw if str(x).strip()]
 
+    # === FALLBACK: if M3 returned a plan but skipped execution (empty steps),
+    # promote plan steps so the user still sees a visible reasoning trace. ===
+    if trace.plan and not trace.steps:
+        for i, p in enumerate(trace.plan, 1):
+            trace.steps.append(TraceStep(
+                step=i,
+                action=p,
+                detail="",
+                outcome="planned",
+            ))
+        # also ensure at least 1 source (the article URL itself)
+        if not trace.sources:
+            src = item.get("url", "").strip()
+            if src:
+                trace.sources.append(src)
+            source_name = item.get("source", "").strip()
+            if source_name and source_name not in trace.sources:
+                trace.sources.append(source_name)
+
     try:
         trace.confidence = float(resp.get("confidence", 0.0))
     except (ValueError, TypeError):
@@ -212,12 +231,14 @@ def main() -> int:
     ap.add_argument("--feed-cache", type=Path, default=Path(__file__).parent.parent / "api" / "cache_feed.json")
     ap.add_argument("--out", type=Path, default=Path(__file__).parent.parent / "api" / "cache_reason.json")
     ap.add_argument("--limit", type=int, default=3, help="max items per grid to reason about")
+    ap.add_argument("--max-retries", type=int, default=4,
+                    help="max M3 retries (default 4 for cron; pass 1 for on-demand browser calls to fail fast)")
     args = ap.parse_args()
 
     if not args.item and not args.from_cache:
         ap.error("must supply --item or --from-cache GRID")
 
-    client = GMIClient()
+    client = GMIClient(max_retries_override=args.max_retries)
     items: list[dict] = []
 
     if args.item:
