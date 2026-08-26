@@ -260,19 +260,6 @@
     const targetPct = Math.round(c * 100);
     const tone = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
 
-    const planList = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">tidak ada plan</li>';
-    const stepsList = (trace.steps || []).map((s) => `
-      <li>
-        <strong>${escapeHtml(s.action || '')}.</strong>
-        <span class="step-detail-text">${escapeHtml(s.detail || '')}</span>
-        <span class="step-outcome step-outcome-pop ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
-      </li>`).join('') || '<li class="empty">tidak ada step</li>';
-    const srcList = (trace.sources || []).map((s) => {
-      const safe = escapeHtml(s);
-      const isUrl = /^https?:\/\//i.test(s);
-      return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-    }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
-
     drawer.innerHTML = `
       <div class="inline-drawer-inner">
         <div class="inline-meta-bar">
@@ -281,7 +268,7 @@
           <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
           <span>·</span>
           <span>${(trace.steps || []).length} langkah verifikasi</span>
-          <span class="skip-hint">[klik untuk skip animasi]</span>
+          <span class="skip-hint">[klik untuk lewati animasi]</span>
         </div>
 
         <div class="reason-confidence">
@@ -290,90 +277,168 @@
           <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:0%;background:${tone}"></span></span>
         </div>
 
-        <section class="reason-block">
+        <section class="reason-block block-plan">
           <h4><span class="rb-num">1</span> Rencana</h4>
-          <ol>${planList}</ol>
+          <ol class="typewriter-plan-list"></ol>
         </section>
 
-        <section class="reason-block">
+        <section class="reason-block block-steps">
           <h4><span class="rb-num">2</span> Langkah & Hasil</h4>
-          <ol>${stepsList}</ol>
+          <ol class="typewriter-steps-list"></ol>
         </section>
 
-        <section class="reason-block">
+        <section class="reason-block block-sources">
           <h4><span class="rb-num">3</span> Sumber</h4>
-          <ul>${srcList}</ul>
+          <ul class="typewriter-sources-list"></ul>
         </section>
 
-        <section class="reason-block">
+        <section class="reason-block block-conclusion">
           <h4><span class="rb-num">4</span> Kesimpulan</h4>
-          <p class="summary-text"><span class="type-cursor">▋</span></p>
+          <p class="summary-text"></p>
         </section>
       </div>
     `;
 
-    // 1. Animate Confidence counter & bar smoothly
     const fillEl = drawer.querySelector('.rc-fill');
     const numEl = drawer.querySelector('.rc-num');
-    if (fillEl && numEl) {
-      setTimeout(() => {
-        fillEl.style.width = `${targetPct}%`;
-      }, 50);
+    const planOl = drawer.querySelector('.typewriter-plan-list');
+    const stepsOl = drawer.querySelector('.typewriter-steps-list');
+    const sourcesUl = drawer.querySelector('.typewriter-sources-list');
+    const sumEl = drawer.querySelector('.summary-text');
 
+    let isSkipped = false;
+
+    // Full Instant Render (fallback / on skip)
+    function renderInstant() {
+      if (fillEl) fillEl.style.width = `${targetPct}%`;
+      if (numEl) numEl.textContent = `${targetPct}%`;
+
+      if (planOl) {
+        planOl.innerHTML = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">tidak ada plan</li>';
+      }
+      if (stepsOl) {
+        stepsOl.innerHTML = (trace.steps || []).map((s) => `
+          <li>
+            <strong>${escapeHtml(s.action || '')}.</strong>
+            <span class="step-detail-text">${escapeHtml(s.detail || '')}</span>
+            <span class="step-outcome step-outcome-pop ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
+          </li>`).join('') || '<li class="empty">tidak ada step</li>';
+      }
+      if (sourcesUl) {
+        sourcesUl.innerHTML = (trace.sources || []).map((s) => {
+          const safe = escapeHtml(s);
+          const isUrl = /^https?:\/\//i.test(s);
+          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+        }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
+      }
+      if (sumEl) {
+        sumEl.textContent = trace.summary || '—';
+      }
+    }
+
+    // Sequential Typewriter Streaming
+    async function runFullSequence() {
+      // 1. Animate Confidence counter & bar
+      if (fillEl) fillEl.style.width = `${targetPct}%`;
       let currentVal = 0;
       const countInterval = setInterval(() => {
         if (currentVal < targetPct) {
-          currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 15) || 1);
-          numEl.textContent = `${currentVal}%`;
+          currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 12) || 1);
+          if (numEl) numEl.textContent = `${currentVal}%`;
         } else {
-          numEl.textContent = `${targetPct}%`;
+          if (numEl) numEl.textContent = `${targetPct}%`;
           clearInterval(countInterval);
         }
-      }, 25);
-    }
+      }, 20);
 
-    // 2. Stream Typewriter for conclusion text
-    const sumEl = drawer.querySelector('.summary-text');
-    const fullSummary = trace.summary || '—';
-    let isSkipped = false;
+      // 2. Stream Plans (fast bullet typewriter)
+      const plans = trace.plan || [];
+      for (const p of plans) {
+        if (isSkipped || !drawer.isConnected) return;
+        const li = document.createElement('li');
+        planOl.appendChild(li);
+        await typeIntoElement(li, p, 10);
+      }
 
-    function runTypewriter() {
-      if (!sumEl) return;
-      sumEl.textContent = '';
-      const cursor = document.createElement('span');
-      cursor.className = 'type-cursor';
-      cursor.textContent = '▋';
-      sumEl.appendChild(cursor);
+      // 3. Stream Steps
+      const steps = trace.steps || [];
+      for (const s of steps) {
+        if (isSkipped || !drawer.isConnected) return;
+        const li = document.createElement('li');
+        const actionStr = s.action ? `${s.action}. ` : '';
+        const detailStr = s.detail || '';
+        li.innerHTML = `<strong>${escapeHtml(actionStr)}</strong><span class="step-txt"></span>`;
+        stepsOl.appendChild(li);
 
-      let idx = 0;
-      function tick() {
-        if (!drawer.isConnected) return; // drawer closed
-        if (isSkipped) {
-          sumEl.textContent = fullSummary;
-          cursor.remove();
-          return;
-        }
-        if (idx < fullSummary.length) {
-          const chunk = fullSummary.slice(idx, idx + 2);
-          sumEl.insertBefore(document.createTextNode(chunk), cursor);
-          idx += 2;
-          setTimeout(tick, 14);
-        } else {
-          cursor.remove();
+        const txtSpan = li.querySelector('.step-txt');
+        await typeIntoElement(txtSpan, detailStr, 8);
+
+        // Pop badge after detail finishes
+        if (!isSkipped && drawer.isConnected) {
+          const badge = document.createElement('span');
+          badge.className = `step-outcome step-outcome-pop ${outcomeClass(s.outcome)}`;
+          badge.textContent = s.outcome || 'unknown';
+          li.appendChild(badge);
+          await sleep(50);
         }
       }
-      tick();
+
+      // 4. Render Sources
+      if (sourcesUl && !isSkipped) {
+        sourcesUl.innerHTML = (trace.sources || []).map((s) => {
+          const safe = escapeHtml(s);
+          const isUrl = /^https?:\/\//i.test(s);
+          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+        }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
+      }
+
+      // 5. Stream Conclusion
+      if (sumEl && !isSkipped && drawer.isConnected) {
+        await typeIntoElement(sumEl, trace.summary || '—', 10);
+      }
     }
 
-    runTypewriter();
+    function typeIntoElement(el, text, speed = 10) {
+      return new Promise((resolve) => {
+        let i = 0;
+        const cursor = document.createElement('span');
+        cursor.className = 'type-cursor';
+        cursor.textContent = '▋';
+        el.appendChild(cursor);
 
-    // Click inside drawer to skip animation immediately
+        function tick() {
+          if (isSkipped || !drawer.isConnected) {
+            cursor.remove();
+            el.textContent = text;
+            resolve();
+            return;
+          }
+          if (i < text.length) {
+            const chunk = text.slice(i, i + 3);
+            el.insertBefore(document.createTextNode(chunk), cursor);
+            i += 3;
+            setTimeout(tick, speed);
+          } else {
+            cursor.remove();
+            resolve();
+          }
+        }
+        tick();
+      });
+    }
+
+    function sleep(ms) {
+      return new Promise((r) => setTimeout(r, ms));
+    }
+
+    // Start sequence
+    runFullSequence();
+
+    // Click anywhere in drawer to skip and render instantly
     drawer.onclick = (e) => {
-      if (e.target.closest('a')) return; // don't block external links
+      if (e.target.closest('a')) return;
       isSkipped = true;
-      if (numEl) numEl.textContent = `${targetPct}%`;
-      if (fillEl) fillEl.style.width = `${targetPct}%`;
-      if (sumEl) sumEl.textContent = fullSummary;
+      renderInstant();
     };
   }
 
