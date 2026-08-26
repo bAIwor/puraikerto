@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0d1117">
+<meta name="theme-color" content="#e4ded3">
 <meta name="description" content="purAIkerto — Apa yang perlu kamu tahu tentang AI hari ini. Dikurasi oleh bAIwor (MiniMax M3).">
 <title>purAIkerto — Info AI hari ini, dikurasi bAIwor</title>
-<link rel="stylesheet" href="assets/style.css?v=16">
+<link rel="stylesheet" href="assets/style.css?v=17">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <script>
   // Set theme before first paint to avoid a flash of the wrong theme.
   (function () {
     try {
       var saved = localStorage.getItem('puraikerto-theme');
-      var theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      var theme = saved || 'vintage';
       document.documentElement.setAttribute('data-theme', theme);
     } catch (e) {
-      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.setAttribute('data-theme', 'vintage');
     }
   })();
 </script>
@@ -183,6 +183,6 @@
   </div>
 </article>
 
-<script src="assets/panel-reasoning.js?v=16" defer></script>
+<script src="assets/panel-reasoning.js?v=17" defer></script>
 </body>
 </html>
