@@ -258,7 +258,6 @@
   function renderInlineTrace(drawer, trace, fallbackTitle, fallbackUrl) {
     const c = typeof trace.confidence === 'number' ? trace.confidence : 0;
     const targetPct = Math.round(c * 100);
-    const tone = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
 
     drawer.innerHTML = `
       <div class="inline-drawer-inner">
@@ -273,8 +272,8 @@
 
         <div class="reason-confidence">
           <span class="rc-label">Tingkat Keyakinan</span>
-          <strong class="rc-num" style="color:${tone}">0%</strong>
-          <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:0%;background:${tone}"></span></span>
+          <strong class="rc-num">0%</strong>
+          <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:0%"></span></span>
         </div>
 
         <section class="reason-block block-plan">
@@ -570,7 +569,6 @@
 
       const date = a.created_at ? new Date(a.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '';
       const targetConf = typeof a.confidence === 'number' ? Math.round(a.confidence * 100) : 75;
-      const tone = (a.confidence || 0.7) >= 0.7 ? 'var(--lime)' : (a.confidence || 0.5) >= 0.4 ? 'var(--amber)' : 'var(--coral)';
 
       const rawBody = a.body || a.summary || '';
       const paragraphs = rawBody.split(/\n\n+/).filter(p => p.trim());
@@ -588,8 +586,8 @@
 
           <div class="reason-confidence">
             <span class="rc-label">Tingkat Keyakinan</span>
-            <strong class="article-rc-num" style="color:${tone}">0%</strong>
-            <span class="rc-bar" aria-hidden="true"><span class="article-rc-fill" style="width:0%;background:${tone}"></span></span>
+            <strong class="article-rc-num">0%</strong>
+            <span class="rc-bar" aria-hidden="true"><span class="article-rc-fill" style="width:0%"></span></span>
           </div>
 
           <div class="article-body-stream"></div>

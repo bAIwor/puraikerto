@@ -407,12 +407,19 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   border-radius: 4px;
   overflow: hidden;
 }
-.inline-drawer-inner .reason-confidence .rc-fill {
+.inline-drawer-inner .reason-confidence .rc-fill,
+.inline-drawer-inner .reason-confidence .article-rc-fill {
   display: block;
   height: 100%;
   width: 0%;
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   border-radius: 3px;
+  background: #111111 !important;
+}
+.inline-drawer-inner .reason-confidence .rc-num,
+.inline-drawer-inner .reason-confidence .article-rc-num {
+  color: #111111 !important;
+  font-weight: 800;
 }
 .inline-drawer-inner .reason-block {
   margin-top: 6px;
