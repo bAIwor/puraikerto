@@ -262,8 +262,23 @@ def main() -> int:
         items = grid_items[: args.limit]
         log.info("reasoning about %d items from %s", len(items), args.from_cache)
 
+    # Load existing cache to skip already-cached items in batch mode
+    existing_cache = read_trace_cache(args.out) or {}
+    existing_urls = {
+        t.get("item_url"): t
+        for t in existing_cache.get("traces", [])
+        if isinstance(t, dict) and t.get("item_url") and not t.get("error") and t.get("steps")
+    }
+
     traces_out = []
     for it in items:
+        url = it.get("url", "")
+        # In batch mode (--from-cache), skip items that already have a complete trace in cache
+        if args.from_cache and url in existing_urls:
+            log.info("item '%s' already cached, skipping", (it.get("title") or "")[:50])
+            traces_out.append(existing_urls[url])
+            continue
+
         t = generate_trace(client, it)
         d = trace_to_dict(t)
         if not t.error:
@@ -274,11 +289,15 @@ def main() -> int:
                 len(t.steps),
             )
         else:
-            # still emit a trace object so the endpoint can render a graceful panel
             log.warning("trace for '%s' carried error: %s", (t.item_title or "")[:60], t.error)
         traces_out.append(d)
 
-    write_trace_cache(traces_out, args.out)
+        # Incrementally save after each generated item so progress is never lost
+        write_trace_cache([d], args.out)
+
+        # Gentle pause between items in batch mode
+        if len(items) > 1:
+            time.sleep(2)
 
     # When invoked for a single item (by reason.php), emit the JSON to stdout
     if args.item and traces_out:
