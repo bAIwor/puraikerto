@@ -451,8 +451,8 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   font-size: 13.5px;
   line-height: 1.6;
   padding: 10px 12px;
-  margin-bottom: 7px;
-  background: #f9f8f5;
+  margin-bottom: 8px;
+  background: #f4f0e6;
   border: 1.5px solid #111111;
   border-radius: 4px;
   display: flex;
@@ -472,13 +472,29 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 }
 .inline-drawer-inner .reason-block .step-outcome {
   align-self: flex-start;
-  margin-top: 4px;
+  margin-top: 5px;
   margin-left: 0;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 3px;
-  border: 1px solid currentColor;
+  background: #e4ded3;
+  color: #111111;
+  border: 1.5px solid #111111;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.inline-drawer-inner .reason-block .step-outcome.ok {
+  background: #e4ded3;
+  color: #111111;
+  border-color: #111111;
+}
+.inline-drawer-inner .reason-block .step-outcome.weak,
+.inline-drawer-inner .reason-block .step-outcome.no,
+.inline-drawer-inner .reason-block .step-outcome.unknown {
+  background: #e4ded3;
+  color: #111111;
+  border-color: #111111;
 }
 .inline-drawer-inner .summary-text {
   margin: 0;
@@ -486,9 +502,9 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   line-height: 1.65;
   color: #111111;
   padding: 14px 16px;
-  background: #f9f8f5;
+  background: #f4f0e6;
   border: 1.5px solid #111111;
-  border-left: 5px solid var(--accent);
+  border-left: 5px solid #111111;
   border-radius: 4px;
   font-family: var(--font-body);
   min-height: 38px;
@@ -844,18 +860,24 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .reason-block .step-outcome {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 9px;
-  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
   border-radius: 3px;
-  margin-left: 6px;
+  background: #e4ded3;
+  color: #111111;
+  border: 1px solid #111111;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  vertical-align: 1px;
 }
-.reason-block .step-outcome.ok      { background: color-mix(in srgb, var(--lime) 18%, transparent);  color: var(--lime); }
-.reason-block .step-outcome.weak    { background: color-mix(in srgb, var(--amber) 18%, transparent); color: var(--amber); }
-.reason-block .step-outcome.no      { background: color-mix(in srgb, var(--coral) 18%, transparent); color: var(--coral); }
-.reason-block .step-outcome.unknown { background: color-mix(in srgb, var(--muted) 22%, transparent); color: var(--fg-dim); }
+.reason-block .step-outcome.ok,
+.reason-block .step-outcome.weak,
+.reason-block .step-outcome.no,
+.reason-block .step-outcome.unknown {
+  background: #e4ded3;
+  color: #111111;
+  border-color: #111111;
+}
 
 /* loading state inside panel */
 .reason-loading { color: var(--fg-dim); font-style: italic; }
