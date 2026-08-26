@@ -374,12 +374,35 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .inline-drawer-inner .summary-text {
   margin: 0;
   font-size: 12.5px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--fg);
   padding: 8px 10px;
   background: var(--card-2);
   border-left: 3px solid var(--accent);
   border-radius: 0 4px 4px 0;
+  font-family: var(--font-body);
+}
+
+.type-cursor {
+  display: inline-block;
+  color: var(--accent);
+  margin-left: 2px;
+  animation: cursor-blink 0.5s step-start infinite;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.inline-drawer-inner .reason-block {
+  margin-top: 6px;
+  animation: drawer-fade-up 0.25s ease-out;
+}
+@keyframes drawer-fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .grid-items .empty-row { padding-left: 10px; }

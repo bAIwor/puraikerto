@@ -306,10 +306,42 @@
 
         <section class="reason-block">
           <h4><span class="rb-num">4</span> Kesimpulan</h4>
-          <p class="summary-text">${escapeHtml(trace.summary || '—')}</p>
+          <p class="summary-text"></p>
         </section>
       </div>
     `;
+
+    // Typewriter streaming effect for conclusion
+    const sumEl = container.querySelector('.summary-text');
+    if (sumEl) {
+      streamTypeWriter(sumEl, trace.summary || '—', 8);
+    }
+  }
+
+  function streamTypeWriter(element, fullText, speed = 8) {
+    if (!fullText) {
+      element.textContent = '—';
+      return;
+    }
+    element.textContent = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'type-cursor';
+    cursor.textContent = '▋';
+    element.appendChild(cursor);
+
+    let idx = 0;
+    function typeNext() {
+      if (!element.isConnected) return; // drawer was closed
+      if (idx < fullText.length) {
+        const chunk = fullText.slice(idx, idx + 3);
+        element.insertBefore(document.createTextNode(chunk), cursor);
+        idx += 3;
+        setTimeout(typeNext, speed);
+      } else {
+        cursor.remove();
+      }
+    }
+    typeNext();
   }
 
   async function openItem(li) {
