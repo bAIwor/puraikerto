@@ -717,6 +717,15 @@
 
   // delegate clicks
   document.addEventListener('click', (e) => {
+    // If selecting text (e.g. dragging to copy), do not toggle/close accordion!
+    const sel = window.getSelection();
+    if (sel && sel.toString().trim().length > 0) return;
+
+    // If click is inside an open drawer body, do not toggle/close accordion!
+    if (e.target.closest('.inline-reason-drawer') || e.target.closest('.article-inline-drawer')) {
+      return;
+    }
+
     const li = e.target.closest('.grid-items li[data-idx]');
     if (li) { openItem(li); return; }
     const ac = e.target.closest('.article-card[data-id], .article-card[data-slug]');
