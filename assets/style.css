@@ -355,12 +355,24 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .inline-meta-bar .src-link:hover {
   filter: brightness(1.2);
 }
-.inline-meta-bar .skip-hint {
+.inline-meta-bar .drawer-close-btn {
   margin-left: auto;
-  font-size: 9.5px;
-  color: var(--muted);
-  font-style: italic;
-  opacity: 0.8;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 4px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+.inline-meta-bar .drawer-close-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
 }
 .inline-drawer-inner .reason-confidence {
   margin: 4px 0 6px;

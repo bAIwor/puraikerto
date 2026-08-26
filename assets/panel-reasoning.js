@@ -267,8 +267,8 @@
           <span>·</span>
           <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
           <span>·</span>
-          <span>${(trace.steps || []).length} langkah verifikasi</span>
-          <span class="skip-hint">[klik untuk lewati animasi]</span>
+          <span>${(trace.steps || []).length} langkah</span>
+          <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
         </div>
 
         <div class="reason-confidence">
@@ -446,19 +446,9 @@
 
     // Start human typewriter sequence
     runFullSequence();
-
-    // Click anywhere in drawer to skip animation immediately
-    drawer.onclick = (e) => {
-      if (e.target.closest('a')) return;
-      isSkipped = true;
-      renderInstant();
-    };
   }
 
-  async function openItem(li) {
-    const isAlreadyOpen = li.classList.contains('is-open');
-
-    // Close any other open items in all grids smoothly
+  function closeAllDrawers() {
     document.querySelectorAll('.grid-items li.is-open').forEach((el) => {
       el.classList.remove('is-open');
       const oldDrawer = el.querySelector('.inline-reason-drawer');
@@ -467,8 +457,23 @@
         setTimeout(() => oldDrawer.remove(), 250);
       }
     });
+    document.querySelectorAll('.article-card.is-open').forEach((el) => {
+      el.classList.remove('is-open');
+      const oldDrawer = el.querySelector('.article-inline-drawer');
+      if (oldDrawer) {
+        oldDrawer.classList.remove('is-expanded');
+        setTimeout(() => oldDrawer.remove(), 250);
+      }
+    });
+  }
 
-    // If clicking currently open item, toggle it closed
+  async function openItem(li) {
+    const isAlreadyOpen = li.classList.contains('is-open');
+
+    // Close any currently open items smoothly
+    closeAllDrawers();
+
+    // If clicking currently open item, it collapses (toggle close)
     if (isAlreadyOpen) return;
 
     li.classList.add('is-open');
@@ -525,17 +530,10 @@
   async function openArticle(card) {
     const isAlreadyOpen = card.classList.contains('is-open');
 
-    // Close any other open article cards smoothly
-    document.querySelectorAll('.article-card.is-open').forEach((el) => {
-      el.classList.remove('is-open');
-      const oldDrawer = el.querySelector('.article-inline-drawer');
-      if (oldDrawer) {
-        oldDrawer.classList.remove('is-expanded');
-        setTimeout(() => oldDrawer.remove(), 250);
-      }
-    });
+    // Close any other open items
+    closeAllDrawers();
 
-    // If clicking currently open card, toggle it closed
+    // If clicking currently open card, it collapses (toggle close)
     if (isAlreadyOpen) return;
 
     card.classList.add('is-open');
@@ -568,7 +566,7 @@
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const a = await r.json();
 
-      if (!card.classList.contains('is-open')) return; // user closed before arrival
+      if (!card.classList.contains('is-open')) return;
 
       const date = a.created_at ? new Date(a.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '';
       const targetConf = typeof a.confidence === 'number' ? Math.round(a.confidence * 100) : 75;
@@ -585,7 +583,7 @@
             <span>·</span>
             <span>${a.read_minutes || 3} min baca</span>
             ${a.grid_origin ? `<span>·</span><span class="src">dari grid ${escapeHtml(a.grid_origin)}</span>` : ''}
-            <span class="skip-hint">[klik untuk lewati animasi]</span>
+            <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
           </div>
 
           <div class="reason-confidence">
@@ -659,7 +657,7 @@
                 setTimeout(tick, delay);
               } else {
                 cursor.remove();
-                pEl.innerHTML = md(p); // parse markdown bold/links after finishing
+                pEl.innerHTML = md(p);
                 resolve();
               }
             }
@@ -679,27 +677,7 @@
         }
       }
 
-      function instantArticle() {
-        isArticleSkipped = true;
-        if (numEl) numEl.textContent = `${targetConf}%`;
-        if (fillEl) fillEl.style.width = `${targetConf}%`;
-        if (bodyEl) bodyEl.innerHTML = md(rawBody);
-        if (sourcesEl) {
-          sourcesEl.innerHTML = (a.sources || []).map(s => {
-            const safe = escapeHtml(s);
-            const isUrl = /^https?:\/\//i.test(s);
-            return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-          }).join('') || '<li class="empty">tidak ada sumber</li>';
-        }
-      }
-
       streamArticle();
-
-      // Click inside drawer to skip animation immediately
-      drawer.onclick = (e) => {
-        if (e.target.closest('a')) return;
-        instantArticle();
-      };
 
     } catch (e) {
       console.error(e);
@@ -717,19 +695,33 @@
 
   // delegate clicks
   document.addEventListener('click', (e) => {
-    // If selecting text (e.g. dragging to copy), do not toggle/close accordion!
+    // If selecting text (e.g. dragging to copy), don't trigger click close
     const sel = window.getSelection();
     if (sel && sel.toString().trim().length > 0) return;
 
-    // If click is inside an open drawer body, do not toggle/close accordion!
-    if (e.target.closest('.inline-reason-drawer') || e.target.closest('.article-inline-drawer')) {
+    // If clicking an external link, let it open normally
+    if (e.target.closest('a')) return;
+
+    // If clicking explicit close button
+    if (e.target.closest('.drawer-close-btn')) {
+      closeAllDrawers();
       return;
     }
 
     const li = e.target.closest('.grid-items li[data-idx]');
-    if (li) { openItem(li); return; }
+    if (li) {
+      openItem(li);
+      return;
+    }
+
     const ac = e.target.closest('.article-card[data-id], .article-card[data-slug]');
-    if (ac) openArticle(ac);
+    if (ac) {
+      openArticle(ac);
+      return;
+    }
+
+    // Clicking anywhere outside any open item -> close all open accordions!
+    closeAllDrawers();
   });
 
   // boot
