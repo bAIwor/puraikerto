@@ -306,29 +306,35 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   letter-spacing: 0.5px;
 }
 .grid-items li.is-open {
-  background: color-mix(in srgb, var(--accent) 10%, var(--card));
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
   border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
   cursor: default;
 }
 .grid-items li.is-open::before { color: var(--accent); }
 
-/* ---------- inline reason drawer: accordion drop-down ---------- */
+/* ---------- inline reason drawer: accordion drop-down with smooth transition ---------- */
 .inline-reason-drawer {
   margin-top: 10px;
   padding-top: 12px;
-  border-top: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--border));
-  animation: slide-down 0.2s ease-out;
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border));
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
   cursor: default;
 }
-@keyframes slide-down {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+.inline-reason-drawer.is-expanded {
+  max-height: 2500px;
+  opacity: 1;
+  transform: translateY(0);
 }
 .inline-drawer-inner {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 4px;
 }
 .inline-meta-bar {
   display: flex;
@@ -348,39 +354,90 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .inline-meta-bar .src-link:hover {
   filter: brightness(1.2);
 }
+.inline-meta-bar .skip-hint {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0.8;
+}
 .inline-drawer-inner .reason-confidence {
   margin: 4px 0 6px;
   padding: 8px 10px;
   background: var(--card-2);
   border: 1px solid var(--border);
   border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.inline-drawer-inner .reason-confidence .rc-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.inline-drawer-inner .reason-confidence .rc-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 3px;
 }
 .inline-drawer-inner .reason-block {
   margin-top: 6px;
+  animation: drawer-fade-up 0.3s ease-out;
+}
+@keyframes drawer-fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .inline-drawer-inner .reason-block h4 {
   font-size: 10.5px;
   color: var(--accent);
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  padding-bottom: 4px;
 }
 .inline-drawer-inner .reason-block .rb-num {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
   background: var(--accent);
+  color: #000;
+  font-weight: 800;
+  font-size: 9px;
+}
+.inline-drawer-inner .reason-block ol,
+.inline-drawer-inner .reason-block ul {
+  margin: 0;
+  padding-left: 18px;
 }
 .inline-drawer-inner .reason-block li {
   font-size: 12px;
+  line-height: 1.5;
   padding: 3px 0;
+}
+.inline-drawer-inner .reason-block li strong {
+  color: var(--accent);
 }
 .inline-drawer-inner .summary-text {
   margin: 0;
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--fg);
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--card-2);
   border-left: 3px solid var(--accent);
   border-radius: 0 4px 4px 0;
   font-family: var(--font-body);
+  min-height: 38px;
 }
 
 .type-cursor {
@@ -396,13 +453,12 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   50% { opacity: 0; }
 }
 
-.inline-drawer-inner .reason-block {
-  margin-top: 6px;
-  animation: drawer-fade-up 0.25s ease-out;
+.step-outcome-pop {
+  animation: badge-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-@keyframes drawer-fade-up {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes badge-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
 
 .grid-items .empty-row { padding-left: 10px; }

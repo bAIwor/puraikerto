@@ -255,17 +255,17 @@
     return 'unknown';
   }
 
-  function renderInlineTrace(container, trace, fallbackTitle, fallbackUrl) {
+  function renderInlineTrace(drawer, trace, fallbackTitle, fallbackUrl) {
     const c = typeof trace.confidence === 'number' ? trace.confidence : 0;
-    const pct = Math.round(c * 100);
+    const targetPct = Math.round(c * 100);
     const tone = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
 
     const planList = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">tidak ada plan</li>';
     const stepsList = (trace.steps || []).map((s) => `
       <li>
         <strong>${escapeHtml(s.action || '')}.</strong>
-        ${escapeHtml(s.detail || '')}
-        <span class="step-outcome ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
+        <span class="step-detail-text">${escapeHtml(s.detail || '')}</span>
+        <span class="step-outcome step-outcome-pop ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
       </li>`).join('') || '<li class="empty">tidak ada step</li>';
     const srcList = (trace.sources || []).map((s) => {
       const safe = escapeHtml(s);
@@ -273,7 +273,7 @@
       return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
     }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
 
-    container.innerHTML = `
+    drawer.innerHTML = `
       <div class="inline-drawer-inner">
         <div class="inline-meta-bar">
           <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">buka sumber asli ↗</a>
@@ -281,12 +281,13 @@
           <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
           <span>·</span>
           <span>${(trace.steps || []).length} langkah verifikasi</span>
+          <span class="skip-hint">[klik untuk skip animasi]</span>
         </div>
 
         <div class="reason-confidence">
           <span class="rc-label">Tingkat Keyakinan</span>
-          <strong style="color:${tone}">${pct}%</strong>
-          <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:${pct}%;background:${tone}"></span></span>
+          <strong class="rc-num" style="color:${tone}">0%</strong>
+          <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:0%;background:${tone}"></span></span>
         </div>
 
         <section class="reason-block">
@@ -306,55 +307,90 @@
 
         <section class="reason-block">
           <h4><span class="rb-num">4</span> Kesimpulan</h4>
-          <p class="summary-text"></p>
+          <p class="summary-text"><span class="type-cursor">▋</span></p>
         </section>
       </div>
     `;
 
-    // Typewriter streaming effect for conclusion
-    const sumEl = container.querySelector('.summary-text');
-    if (sumEl) {
-      streamTypeWriter(sumEl, trace.summary || '—', 8);
-    }
-  }
+    // 1. Animate Confidence counter & bar smoothly
+    const fillEl = drawer.querySelector('.rc-fill');
+    const numEl = drawer.querySelector('.rc-num');
+    if (fillEl && numEl) {
+      setTimeout(() => {
+        fillEl.style.width = `${targetPct}%`;
+      }, 50);
 
-  function streamTypeWriter(element, fullText, speed = 8) {
-    if (!fullText) {
-      element.textContent = '—';
-      return;
+      let currentVal = 0;
+      const countInterval = setInterval(() => {
+        if (currentVal < targetPct) {
+          currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 15) || 1);
+          numEl.textContent = `${currentVal}%`;
+        } else {
+          numEl.textContent = `${targetPct}%`;
+          clearInterval(countInterval);
+        }
+      }, 25);
     }
-    element.textContent = '';
-    const cursor = document.createElement('span');
-    cursor.className = 'type-cursor';
-    cursor.textContent = '▋';
-    element.appendChild(cursor);
 
-    let idx = 0;
-    function typeNext() {
-      if (!element.isConnected) return; // drawer was closed
-      if (idx < fullText.length) {
-        const chunk = fullText.slice(idx, idx + 3);
-        element.insertBefore(document.createTextNode(chunk), cursor);
-        idx += 3;
-        setTimeout(typeNext, speed);
-      } else {
-        cursor.remove();
+    // 2. Stream Typewriter for conclusion text
+    const sumEl = drawer.querySelector('.summary-text');
+    const fullSummary = trace.summary || '—';
+    let isSkipped = false;
+
+    function runTypewriter() {
+      if (!sumEl) return;
+      sumEl.textContent = '';
+      const cursor = document.createElement('span');
+      cursor.className = 'type-cursor';
+      cursor.textContent = '▋';
+      sumEl.appendChild(cursor);
+
+      let idx = 0;
+      function tick() {
+        if (!drawer.isConnected) return; // drawer closed
+        if (isSkipped) {
+          sumEl.textContent = fullSummary;
+          cursor.remove();
+          return;
+        }
+        if (idx < fullSummary.length) {
+          const chunk = fullSummary.slice(idx, idx + 2);
+          sumEl.insertBefore(document.createTextNode(chunk), cursor);
+          idx += 2;
+          setTimeout(tick, 14);
+        } else {
+          cursor.remove();
+        }
       }
+      tick();
     }
-    typeNext();
+
+    runTypewriter();
+
+    // Click inside drawer to skip animation immediately
+    drawer.onclick = (e) => {
+      if (e.target.closest('a')) return; // don't block external links
+      isSkipped = true;
+      if (numEl) numEl.textContent = `${targetPct}%`;
+      if (fillEl) fillEl.style.width = `${targetPct}%`;
+      if (sumEl) sumEl.textContent = fullSummary;
+    };
   }
 
   async function openItem(li) {
     const isAlreadyOpen = li.classList.contains('is-open');
 
-    // Close any other open items in any grid
+    // Close any other open items in all grids smoothly
     document.querySelectorAll('.grid-items li.is-open').forEach((el) => {
       el.classList.remove('is-open');
-      const drawer = el.querySelector('.inline-reason-drawer');
-      if (drawer) drawer.remove();
+      const oldDrawer = el.querySelector('.inline-reason-drawer');
+      if (oldDrawer) {
+        oldDrawer.classList.remove('is-expanded');
+        setTimeout(() => oldDrawer.remove(), 250);
+      }
     });
 
-    // If clicking the currently open item, toggle it closed
+    // If clicking currently open item, toggle it closed
     if (isAlreadyOpen) return;
 
     li.classList.add('is-open');
@@ -370,10 +406,17 @@
     drawer.className = 'inline-reason-drawer';
     drawer.innerHTML = `
       <div class="inline-drawer-inner">
-        <div class="reason-loading">bAIwor sedang memeriksa & menyusun rencana verifikasi<span class="thinking-dots"></span></div>
+        <div class="reason-loading" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);">
+          &gt; bAIwor engine: memuat data & menyusun verifikasi rencana<span class="type-cursor">▋</span>
+        </div>
       </div>
     `;
     li.appendChild(drawer);
+
+    // Trigger smooth accordion expansion
+    requestAnimationFrame(() => {
+      drawer.classList.add('is-expanded');
+    });
 
     try {
       const qs = new URLSearchParams({ title, url, summary, source, grid });
@@ -389,7 +432,13 @@
     } catch (e) {
       console.error(e);
       if (li.classList.contains('is-open')) {
-        drawer.innerHTML = `<div class="inline-drawer-inner"><p class="reason-loading" style="color:var(--coral)">gagal: ${escapeHtml(e.message)}</p></div>`;
+        drawer.innerHTML = `
+          <div class="inline-drawer-inner">
+            <p class="reason-loading" style="color:var(--coral);font-family:var(--font-mono);font-size:11px;">
+              [!] gagal: ${escapeHtml(e.message)}
+            </p>
+          </div>
+        `;
       }
     }
   }
