@@ -211,8 +211,24 @@ for ($i = count($lines) - 1; $i >= 0; $i--) {
     }
 }
 if ($json_line) {
-    // reason.py may return a trace that itself carries an `error` field
-    // (M3 call failed). Pass it through with 200 so the panel still renders.
+    $parsed_trace = json_decode($json_line, true);
+    if (is_array($parsed_trace) && empty($parsed_trace['error']) && !empty($parsed_trace['steps'])) {
+        // Save to cache so next request is instant (0ms)
+        $existing_data = is_file($cache_path) ? json_decode(@file_get_contents($cache_path) ?: '{}', true) : [];
+        $traces = is_array($existing_data) && isset($existing_data['traces']) ? $existing_data['traces'] : [];
+        $trace_map = [];
+        foreach ($traces as $t) {
+            if (is_array($t) && isset($t['item_url'])) {
+                $trace_map[$t['item_url']] = $t;
+            }
+        }
+        $trace_map[$url] = $parsed_trace;
+        $new_cache = [
+            'generated_at' => date('c'),
+            'traces' => array_values($trace_map),
+        ];
+        @file_put_contents($cache_path, json_encode($new_cache, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
+    }
     echo $json_line;
     exit;
 }

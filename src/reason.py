@@ -197,14 +197,23 @@ def trace_to_dict(t: ReasoningTrace) -> dict:
 
 def write_trace_cache(traces: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    existing = read_trace_cache(path) or {}
+    existing_traces = existing.get("traces", [])
+
+    # Map by item_url to merge new with existing without losing other grids
+    trace_map = {t["item_url"]: t for t in existing_traces if isinstance(t, dict) and "item_url" in t}
+    for t in traces:
+        if isinstance(t, dict) and "item_url" in t:
+            trace_map[t["item_url"]] = t
+
     payload = {
         "generated_at": _now_iso(),
-        "traces": traces,
+        "traces": list(trace_map.values()),
     }
+    tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(path)
-    log.info("wrote %d traces to %s", len(traces), path)
+    log.info("wrote %d traces (total %d merged) to %s", len(traces), len(trace_map), path)
 
 
 def read_trace_cache(path: Path) -> dict | None:
