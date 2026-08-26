@@ -133,6 +133,46 @@
     }
   }
 
+  // ------- stale grid badge -------
+  // A grid is "stale" when this run's curation failed and we carried over the
+  // previous picks. Say so plainly rather than passing old data off as fresh.
+  function markStale(grid, staleSince) {
+    const list = document.getElementById(`grid-${grid}`);
+    if (!list) return;
+    const card = list.closest('.grid');
+    if (!card) return;
+    const head = card.querySelector('.grid-head');
+    if (!head) return;
+
+    const existing = head.querySelector('.stale-badge');
+    if (!staleSince) {
+      existing?.remove();
+      return;
+    }
+
+    let ageText = '';
+    const then = new Date(staleSince);
+    if (!isNaN(then)) {
+      const mins = Math.round((Date.now() - then.getTime()) / 60000);
+      if (mins < 60) ageText = `${mins}m`;
+      else if (mins < 1440) ageText = `${Math.round(mins / 60)}j`;
+      else ageText = `${Math.round(mins / 1440)}h`;
+    }
+    const label = ageText ? `belum diperbarui · ${ageText}` : 'belum diperbarui';
+    const title = `Kurasi terakhir gagal (sumber sedang sibuk). Item ini dibawa dari pembaruan sebelumnya${ageText ? `, ${ageText} lalu` : ''}.`;
+
+    if (existing) {
+      existing.textContent = label;
+      existing.title = title;
+    } else {
+      const b = document.createElement('span');
+      b.className = 'stale-badge';
+      b.textContent = label;
+      b.title = title;
+      head.appendChild(b);
+    }
+  }
+
   // ------- fetch all grids -------
   async function loadFeed() {
     setMeta('memuat…');
@@ -143,8 +183,10 @@
         return;
       }
       const data = await r.json();
+      const staleMap = data.stale_grids || {};
       for (const g of GRIDS) {
         renderItems(g, (data.grids || {})[g] || []);
+        markStale(g, staleMap[g]);
       }
       const when = data.generated_at ? new Date(data.generated_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '-';
       const ttl = data.ttl_hours || 24;

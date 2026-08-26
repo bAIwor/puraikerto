@@ -97,8 +97,15 @@ class GMIClient:
         max_tokens: int = 1024,
         temperature: float = 0.7,
         response_format: dict | None = None,
+        max_retries: int = 4,
     ) -> ChatResponse:
-        """Send a chat completion request and return a parsed response."""
+        """Send a chat completion request and return a parsed response.
+
+        Retries on 429 (rate limit) and 5xx with exponential backoff, because
+        GMI's free tier returns 429 "All endpoints are currently overloaded"
+        under load. Without retry a single 429 silently leaves a grid stale.
+        Honours the Retry-After header when the server sends one.
+        """
         payload: dict = {
             "model": self.model,
             "messages": [m.__dict__ for m in messages],
@@ -108,20 +115,54 @@ class GMIClient:
         if response_format:
             payload["response_format"] = response_format
 
-        t0 = time.time()
-        try:
-            r = self.session.post(
-                f"{self.base_url}/chat/completions",
-                json=payload,
-                timeout=self.timeout,
-            )
-        except requests.RequestException as e:
-            raise GMIError(f"network error: {e}") from e
-        elapsed = int((time.time() - t0) * 1000)
+        last_err: str = ""
+        for attempt in range(max_retries):
+            t0 = time.time()
+            try:
+                r = self.session.post(
+                    f"{self.base_url}/chat/completions",
+                    json=payload,
+                    timeout=self.timeout,
+                )
+            except requests.RequestException as e:
+                last_err = f"network error: {e}"
+                if attempt == max_retries - 1:
+                    raise GMIError(last_err) from e
+                delay = min(2.0 * (2 ** attempt), 30.0)
+                log.warning(
+                    "m3 %s — retry %d/%d in %.1fs",
+                    last_err, attempt + 1, max_retries - 1, delay,
+                )
+                time.sleep(delay)
+                continue
+            elapsed = int((time.time() - t0) * 1000)
 
-        if r.status_code != 200:
-            snippet = r.text[:300] if r.text else ""
-            raise GMIError(f"HTTP {r.status_code}: {snippet}")
+            # transient: rate limit or server-side failure → back off and retry
+            if r.status_code == 429 or r.status_code >= 500:
+                snippet = (r.text or "")[:200]
+                last_err = f"HTTP {r.status_code}: {snippet}"
+                if attempt == max_retries - 1:
+                    raise GMIError(last_err)
+                retry_after = r.headers.get("Retry-After")
+                if retry_after and retry_after.isdigit():
+                    delay = min(float(retry_after), 60.0)
+                else:
+                    delay = min(2.0 * (2 ** attempt), 30.0)
+                log.warning(
+                    "m3 %s — retry %d/%d in %.1fs",
+                    last_err, attempt + 1, max_retries - 1, delay,
+                )
+                time.sleep(delay)
+                continue
+
+            # permanent failure (4xx other than 429): no point retrying
+            if r.status_code != 200:
+                snippet = r.text[:300] if r.text else ""
+                raise GMIError(f"HTTP {r.status_code}: {snippet}")
+
+            break
+        else:  # pragma: no cover - loop always breaks or raises
+            raise GMIError(last_err or "exhausted retries")
 
         data = r.json()
         try:

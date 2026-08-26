@@ -238,6 +238,10 @@ def run(
         "source_count": len(feed_urls),
         "item_count": len(items),
         "grids": {},
+        # grids whose curation failed this run and are showing carried-over
+        # content. The frontend surfaces this so a reader is never shown stale
+        # picks as if they were fresh.
+        "stale_grids": {},
     }
 
     grids_to_run = [only_grid] if only_grid else list(GRIDS)
@@ -248,9 +252,17 @@ def run(
         elif grid in prev.get("grids", {}):
             log.warning("curate %s returned empty, keeping previous", grid)
             new_payload["grids"][grid] = prev["grids"][grid]
+            # carry forward the original timestamp so age is honest even
+            # across several consecutive failures
+            prev_stale = (prev.get("stale_grids") or {}).get(grid)
+            new_payload["stale_grids"][grid] = prev_stale or prev.get("generated_at", "")
 
     write_cache(new_payload, cache_path)
-    log.info("done — wrote %d grids", len(new_payload["grids"]))
+    stale = list(new_payload["stale_grids"])
+    if stale:
+        log.warning("done — wrote %d grids (stale: %s)", len(new_payload["grids"]), ", ".join(stale))
+    else:
+        log.info("done — wrote %d grids", len(new_payload["grids"]))
     return 0
 
 
