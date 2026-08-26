@@ -279,6 +279,11 @@ def main() -> int:
         traces_out.append(d)
 
     write_trace_cache(traces_out, args.out)
+
+    # When invoked for a single item (by reason.php), emit the JSON to stdout
+    if args.item and traces_out:
+        print(json.dumps(traces_out[0], ensure_ascii=False))
+
     return 0
 
 
