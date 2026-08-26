@@ -172,15 +172,12 @@ $item = json_encode([
 ], JSON_UNESCAPED_UNICODE);
 
 // pass key explicitly so reason.py never needs to read .env itself
-// hard timeout: 45s. reason.py has retry logic (gmi_client) which can
-// take 2+ minutes under load. For on-demand browser calls, fail fast
-// instead — user will see a friendly fallback rather than a 524.
-// Cron-triggered calls (curate.py, reason.py) run directly, no timeout needed.
+// hard timeout: 45s. Uses `env` to avoid nested quote breaking from bash -c
 $cmd = sprintf(
-    'timeout 45 bash -c \'cd %s && GMI_API_KEY=%s %s reason.py --item %s --max-retries 1\' 2>&1',
-    escapeshellarg($src_dir),
+    'timeout 45 env GMI_API_KEY=%s %s %s/reason.py --item %s --max-retries 1 2>&1',
     escapeshellarg($gmi_key),
     escapeshellarg($venv_python),
+    escapeshellarg($src_dir),
     escapeshellarg($item)
 );
 

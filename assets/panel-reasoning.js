@@ -83,7 +83,7 @@
             <span class="src">${escapeHtml((it.source || '').slice(0, 28))}</span>
             <span>·</span>
             <span class="${confClass(conf)}">conf ${Math.round(conf * 100)}%</span>
-            ${pub ? `<span>·</span><span ${escapeHtml(pub)}</span>` : ''}
+            ${pub ? `<span>·</span><span>${escapeHtml(pub)}</span>` : ''}
             ${it.provider ? `<span class="prov-badge">${escapeHtml(it.provider)}</span>` : ''}
           </div>
         </li>`;
