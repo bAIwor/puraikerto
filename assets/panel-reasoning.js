@@ -278,22 +278,22 @@
         </div>
 
         <section class="reason-block block-plan">
-          <h4><span class="rb-num">1</span> Rencana</h4>
+          <h4>Rencana Pemeriksaan</h4>
           <ol class="typewriter-plan-list"></ol>
         </section>
 
         <section class="reason-block block-steps">
-          <h4><span class="rb-num">2</span> Langkah & Hasil</h4>
+          <h4>Langkah & Hasil Verifikasi</h4>
           <ol class="typewriter-steps-list"></ol>
         </section>
 
         <section class="reason-block block-sources">
-          <h4><span class="rb-num">3</span> Sumber</h4>
+          <h4>Sumber Rujukan</h4>
           <ul class="typewriter-sources-list"></ul>
         </section>
 
         <section class="reason-block block-conclusion">
-          <h4><span class="rb-num">4</span> Kesimpulan</h4>
+          <h4>Kesimpulan bAIwor</h4>
           <p class="summary-text"></p>
         </section>
       </div>
@@ -336,31 +336,32 @@
       }
     }
 
-    // Sequential Typewriter Streaming
+    // Human-like Sequential Typewriter Streaming
     async function runFullSequence() {
-      // 1. Animate Confidence counter & bar
+      // 1. Animate Confidence counter & bar smoothly
       if (fillEl) fillEl.style.width = `${targetPct}%`;
       let currentVal = 0;
       const countInterval = setInterval(() => {
         if (currentVal < targetPct) {
-          currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 12) || 1);
+          currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 15) || 1);
           if (numEl) numEl.textContent = `${currentVal}%`;
         } else {
           if (numEl) numEl.textContent = `${targetPct}%`;
           clearInterval(countInterval);
         }
-      }, 20);
+      }, 25);
 
-      // 2. Stream Plans (fast bullet typewriter)
+      // 2. Stream Plans with human typing cadence
       const plans = trace.plan || [];
       for (const p of plans) {
         if (isSkipped || !drawer.isConnected) return;
         const li = document.createElement('li');
         planOl.appendChild(li);
-        await typeIntoElement(li, p, 10);
+        await typeIntoElement(li, p, 18);
+        await sleep(60);
       }
 
-      // 3. Stream Steps
+      // 3. Stream Steps with human typing cadence
       const steps = trace.steps || [];
       for (const s of steps) {
         if (isSkipped || !drawer.isConnected) return;
@@ -371,34 +372,39 @@
         stepsOl.appendChild(li);
 
         const txtSpan = li.querySelector('.step-txt');
-        await typeIntoElement(txtSpan, detailStr, 8);
+        await typeIntoElement(txtSpan, detailStr, 15);
 
-        // Pop badge after detail finishes
+        // Pop badge after step detail finishes
         if (!isSkipped && drawer.isConnected) {
           const badge = document.createElement('span');
           badge.className = `step-outcome step-outcome-pop ${outcomeClass(s.outcome)}`;
           badge.textContent = s.outcome || 'unknown';
           li.appendChild(badge);
-          await sleep(50);
+          await sleep(100);
         }
       }
 
-      // 4. Render Sources
-      if (sourcesUl && !isSkipped) {
-        sourcesUl.innerHTML = (trace.sources || []).map((s) => {
+      // 4. Render Sources smoothly
+      if (sourcesUl && !isSkipped && drawer.isConnected) {
+        const sources = trace.sources || [];
+        for (const s of sources) {
+          if (isSkipped || !drawer.isConnected) return;
+          const li = document.createElement('li');
           const safe = escapeHtml(s);
           const isUrl = /^https?:\/\//i.test(s);
-          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-        }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
+          li.innerHTML = isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe;
+          sourcesUl.appendChild(li);
+          await sleep(60);
+        }
       }
 
-      // 5. Stream Conclusion
+      // 5. Stream Conclusion with human typing cadence
       if (sumEl && !isSkipped && drawer.isConnected) {
-        await typeIntoElement(sumEl, trace.summary || '—', 10);
+        await typeIntoElement(sumEl, trace.summary || '—', 18);
       }
     }
 
-    function typeIntoElement(el, text, speed = 10) {
+    function typeIntoElement(el, text, baseSpeed = 18) {
       return new Promise((resolve) => {
         let i = 0;
         const cursor = document.createElement('span');
@@ -414,10 +420,17 @@
             return;
           }
           if (i < text.length) {
-            const chunk = text.slice(i, i + 3);
-            el.insertBefore(document.createTextNode(chunk), cursor);
-            i += 3;
-            setTimeout(tick, speed);
+            const char = text[i];
+            el.insertBefore(document.createTextNode(char), cursor);
+            i++;
+
+            // Natural human typing rhythm (slight pauses at punctuation)
+            let delay = baseSpeed;
+            if (char === '.' || char === '?' || char === '!') delay = baseSpeed * 3.5;
+            else if (char === ',' || char === ';' || char === ':') delay = baseSpeed * 2;
+            else if (char === ' ') delay = baseSpeed * 1.2;
+
+            setTimeout(tick, delay);
           } else {
             cursor.remove();
             resolve();
@@ -431,10 +444,10 @@
       return new Promise((r) => setTimeout(r, ms));
     }
 
-    // Start sequence
+    // Start human typewriter sequence
     runFullSequence();
 
-    // Click anywhere in drawer to skip and render instantly
+    // Click anywhere in drawer to skip animation immediately
     drawer.onclick = (e) => {
       if (e.target.closest('a')) return;
       isSkipped = true;

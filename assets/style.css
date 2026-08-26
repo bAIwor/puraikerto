@@ -394,7 +394,9 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .inline-drawer-inner .reason-block h4 {
+  font-family: var(--font-mono);
   font-size: 10.5px;
+  font-weight: 700;
   color: var(--accent);
   margin-bottom: 6px;
   display: flex;
@@ -402,17 +404,13 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   gap: 6px;
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
   padding-bottom: 4px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
-.inline-drawer-inner .reason-block .rb-num {
-  display: inline-grid;
-  place-items: center;
-  width: 15px;
-  height: 15px;
-  border-radius: 3px;
-  background: var(--accent);
-  color: #000;
-  font-weight: 800;
-  font-size: 9px;
+.inline-drawer-inner .reason-block h4::before {
+  content: '▸';
+  color: var(--accent);
+  font-size: 11px;
 }
 .inline-drawer-inner .reason-block ol,
 .inline-drawer-inner .reason-block ul {
