@@ -55,10 +55,6 @@
   themeBtn?.addEventListener('click', toggleTheme);
   applyThemeIcon();
 
-  // ------- meta line -------
-  const meta = document.getElementById('meta-line');
-  function setMeta(text) { if (meta) meta.textContent = text; }
-
   // ------- grid items -------
   const GRIDS = ['RADAR', 'SIGNAL', 'TRACKER', 'PULSE'];
   function confClass(c) {
@@ -173,13 +169,68 @@
     }
   }
 
+  // ------- status strip (Monitor surface header) -------
+  const stLive = document.getElementById('st-live');
+  const stLiveText = document.getElementById('st-live-text');
+  const stUpd = document.getElementById('st-upd');
+  const stItems = document.getElementById('st-items');
+  const stSources = document.getElementById('st-sources');
+  const stWindow = document.getElementById('st-window');
+  const stWarn = document.getElementById('st-warn');
+
+  function relTime(iso) {
+    const t = new Date(iso);
+    if (isNaN(t)) return '—';
+    const mins = Math.round((Date.now() - t.getTime()) / 60000);
+    if (mins < 1) return 'baru saja';
+    if (mins < 60) return `${mins}m lalu`;
+    if (mins < 1440) return `${Math.round(mins / 60)}j lalu`;
+    return `${Math.round(mins / 1440)}h lalu`;
+  }
+
+  function setStatus(data, err) {
+    if (!stLive) return;
+    stLive.classList.remove('is-ok', 'is-warn', 'is-err');
+
+    if (err) {
+      stLive.classList.add('is-err');
+      if (stLiveText) stLiveText.textContent = 'gagal';
+      if (stWarn) { stWarn.hidden = false; stWarn.textContent = err; }
+      return;
+    }
+
+    const staleCount = Object.keys(data.stale_grids || {}).length;
+    if (staleCount > 0) {
+      stLive.classList.add('is-warn');
+      if (stLiveText) stLiveText.textContent = 'sebagian';
+      if (stWarn) {
+        stWarn.hidden = false;
+        stWarn.textContent = `${staleCount} grid belum diperbarui`;
+      }
+    } else {
+      stLive.classList.add('is-ok');
+      if (stLiveText) stLiveText.textContent = 'aktif';
+      if (stWarn) { stWarn.hidden = true; stWarn.textContent = ''; }
+    }
+
+    if (stUpd) {
+      stUpd.textContent = data.generated_at ? relTime(data.generated_at) : '—';
+      stUpd.title = data.generated_at
+        ? new Date(data.generated_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+        : '';
+    }
+    const shown = GRIDS.reduce((n, g) => n + ((data.grids || {})[g] || []).length, 0);
+    if (stItems) stItems.textContent = String(shown);
+    if (stSources) stSources.textContent = String(data.source_count ?? '—');
+    if (stWindow) stWindow.textContent = `${data.ttl_hours ?? 24}j`;
+  }
+
   // ------- fetch all grids -------
   async function loadFeed() {
-    setMeta('memuat…');
     try {
       const r = await fetch(API('/api/feed.php'), { credentials: 'omit' });
       if (!r.ok) {
-        setMeta(`gagal memuat feed (HTTP ${r.status})`);
+        setStatus(null, `HTTP ${r.status}`);
         return;
       }
       const data = await r.json();
@@ -188,13 +239,10 @@
         renderItems(g, (data.grids || {})[g] || []);
         markStale(g, staleMap[g]);
       }
-      const when = data.generated_at ? new Date(data.generated_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '-';
-      const ttl = data.ttl_hours || 24;
-      const src = data.source_count || '?';
-      setMeta(`update terakhir ${when} · window ${ttl} jam · ${src} sumber`);
+      setStatus(data, null);
     } catch (e) {
       console.error(e);
-      setMeta('error: ' + e.message);
+      setStatus(null, e.message || 'gagal memuat');
     }
   }
 
@@ -208,6 +256,7 @@
   const sourcesEl = document.getElementById('reason-sources');
   const summaryEl = document.getElementById('reason-summary');
   const confEl = document.getElementById('reason-confidence');
+  const confBar = document.getElementById('reason-confidence-bar');
 
   function showPanel() {
     if (panel) { panel.hidden = false; document.body.style.overflow = 'hidden'; }
@@ -253,18 +302,25 @@
     sourcesEl.innerHTML = srcList;
     summaryEl.textContent = trace.summary || '—';
     const c = typeof trace.confidence === 'number' ? trace.confidence : 0;
+    const tone = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
     confEl.textContent = `${Math.round(c * 100)}%`;
-    confEl.style.color = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
+    confEl.style.color = tone;
+    if (confBar) {
+      confBar.style.width = `${Math.round(c * 100)}%`;
+      confBar.style.background = tone;
+    }
   }
 
   function showLoading(title, url) {
     titleEl.textContent = title;
-    metaEl.innerHTML = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">buka sumber ↗</a> · <span class="reason-loading">bAIwor sedang mikir<span class="thinking-dots"></span></span>`;
+    metaEl.innerHTML = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">buka sumber ↗</a> · <span class="reason-loading">bAIwor sedang memeriksa<span class="thinking-dots"></span></span>`;
     planEl.innerHTML = '';
-    stepsEl.innerHTML = '<li class="reason-loading">menyusun rencana verifikasi…</li>';
+    stepsEl.innerHTML = '<li class="reason-loading">menyusun rencana pemeriksaan…</li>';
     sourcesEl.innerHTML = '';
     summaryEl.textContent = '';
     confEl.textContent = '…';
+    confEl.style.color = '';
+    if (confBar) confBar.style.width = '0';
     showPanel();
   }
 

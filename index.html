@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0d1117">
 <meta name="description" content="purAIkerto — Apa yang perlu kamu tahu tentang AI hari ini. Dikurasi oleh bAIwor (MiniMax M3).">
 <title>purAIkerto — Info AI hari ini, dikurasi bAIwor</title>
-<link rel="stylesheet" href="assets/style.css?v=2">
+<link rel="stylesheet" href="assets/style.css?v=3">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <script>
   // Set theme before first paint to avoid a flash of the wrong theme.
@@ -26,70 +26,98 @@
 <header class="topbar">
   <a href="/" class="brand">
     <span class="brand-mark">pur<span class="ai">AI</span>kerto</span>
-    <span class="brand-tag">Information, made clear.</span>
   </a>
+
+  <!-- Monitor surface: the status strip replaces a hero. A reader should be
+       able to tell at a glance how fresh the picks are and how wide the net was. -->
+  <div class="statusbar" id="statusbar">
+    <span class="st-item st-live" id="st-live" title="Status kurasi">
+      <span class="st-dot" aria-hidden="true"></span><span id="st-live-text">memuat</span>
+    </span>
+    <span class="st-sep" aria-hidden="true"></span>
+    <span class="st-item"><span class="st-key">upd</span><span class="st-val" id="st-upd">—</span></span>
+    <span class="st-sep" aria-hidden="true"></span>
+    <span class="st-item"><span class="st-key">item</span><span class="st-val" id="st-items">—</span></span>
+    <span class="st-sep" aria-hidden="true"></span>
+    <span class="st-item"><span class="st-key">sumber</span><span class="st-val" id="st-sources">—</span></span>
+    <span class="st-sep" aria-hidden="true"></span>
+    <span class="st-item"><span class="st-key">window</span><span class="st-val" id="st-window">24j</span></span>
+    <span class="st-warn" id="st-warn" hidden></span>
+  </div>
+
   <nav class="nav-dock" aria-label="Grid sections">
-    <a href="#radar"  class="dock-pill dock-radar">📡 RADAR</a>
-    <a href="#signal" class="dock-pill dock-signal">⚡ SIGNAL</a>
-    <a href="#tracker" class="dock-pill dock-tracker">🛰️ TRACKER</a>
-    <a href="#pulse"  class="dock-pill dock-pulse">💓 PULSE</a>
+    <a href="#radar"  class="dock-pill dock-radar">RADAR</a>
+    <a href="#signal" class="dock-pill dock-signal">SIGNAL</a>
+    <a href="#tracker" class="dock-pill dock-tracker">TRACKER</a>
+    <a href="#pulse"  class="dock-pill dock-pulse">PULSE</a>
   </nav>
+
   <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Ganti tema terang/gelap">🌙</button>
-  <div class="meta" id="meta-line">memuat…</div>
+  <div class="meta" id="meta-line" hidden></div>
 </header>
 
 <main>
 
-<section class="hero">
-  <h1>
-    <span class="hero-pre">b<span class="ai">AI</span>wor <em>Trends</em></span>
-    <span class="hero-bracket">[ TOP PICKS ]</span>
-  </h1>
-  <p class="hero-sub">Apa yang perlu kamu tahu tentang AI hari ini — dikurasi & diverifikasi bAIwor.</p>
-  <p class="hero-disclaimer">Konten diperbarui tiap 1 jam · Window 24 jam · Klik item untuk lihat <em>reasoning trace</em>.</p>
-</section>
+<p class="lede">
+  Apa yang perlu kamu tahu tentang <strong>AI hari ini</strong> — dikurasi dan diperiksa bAIwor.
+  Klik item mana pun untuk melihat <em>cara ia memeriksanya</em>.
+</p>
 
 <section class="grids">
   <article class="grid grid-radar" id="radar">
     <header class="grid-head">
-      <span class="grid-icon anim-detect-zoom">📡</span>
-      <h2>RADAR <span class="grid-act">DETECT</span></h2>
-      <p class="grid-sub">Apa yang baru & penting (24 jam)</p>
+      <span class="grid-icon anim-detect-zoom" aria-hidden="true">📡</span>
+      <div class="grid-titles">
+        <h2>RADAR</h2>
+        <p class="grid-sub">Apa yang baru &amp; penting</p>
+      </div>
+      <span class="grid-act">DETECT</span>
     </header>
     <ol class="grid-items" id="grid-RADAR"></ol>
   </article>
 
   <article class="grid grid-signal" id="signal">
     <header class="grid-head">
-      <span class="grid-icon anim-prioritize-bob">⚡</span>
-      <h2>SIGNAL <span class="grid-act">PRIORITIZE</span></h2>
-      <p class="grid-sub">Apa yang worth dibaca warga biasa</p>
+      <span class="grid-icon anim-prioritize-bob" aria-hidden="true">⚡</span>
+      <div class="grid-titles">
+        <h2>SIGNAL</h2>
+        <p class="grid-sub">Yang layak dibaca warga biasa</p>
+      </div>
+      <span class="grid-act">PRIORITIZE</span>
     </header>
     <ol class="grid-items" id="grid-SIGNAL"></ol>
   </article>
 
   <article class="grid grid-tracker" id="tracker">
     <header class="grid-head">
-      <span class="grid-icon anim-follow-glide">🛰️</span>
-      <h2>TRACKER <span class="grid-act">FOLLOW</span></h2>
-      <p class="grid-sub">Tren & angka yang bergerak</p>
+      <span class="grid-icon anim-follow-glide" aria-hidden="true">🛰️</span>
+      <div class="grid-titles">
+        <h2>TRACKER</h2>
+        <p class="grid-sub">Tren &amp; angka yang bergerak</p>
+      </div>
+      <span class="grid-act">FOLLOW</span>
     </header>
     <ol class="grid-items" id="grid-TRACKER"></ol>
   </article>
 
   <article class="grid grid-pulse" id="pulse">
     <header class="grid-head">
-      <span class="grid-icon anim-pulse-thump">💓</span>
-      <h2>PULSE <span class="grid-act">UNDERSTAND NOW</span></h2>
-      <p class="grid-sub">Suasana & pembicaraan publik</p>
+      <span class="grid-icon anim-pulse-thump" aria-hidden="true">💓</span>
+      <div class="grid-titles">
+        <h2>PULSE</h2>
+        <p class="grid-sub">Suasana &amp; pembicaraan publik</p>
+      </div>
+      <span class="grid-act">UNDERSTAND</span>
     </header>
     <ol class="grid-items" id="grid-PULSE"></ol>
   </article>
 </section>
 
 <section class="articles" id="articles">
-  <h2>📚 Artikel bAIwor</h2>
-  <p>Longer-form, tak terbatas 24 jam. Dikurasi & ditulis oleh bAIwor (M3). Klik judul untuk baca.</p>
+  <header class="sec-head">
+    <h2>Artikel bAIwor</h2>
+    <p class="sec-sub">Bacaan panjang, tak terikat window 24 jam</p>
+  </header>
   <div class="article-list" id="article-list">
     <p class="empty">Memuat artikel…</p>
   </div>
@@ -98,53 +126,63 @@
 </main>
 
 <footer class="footer">
-  <p>purAIkerto — Information, made clear.</p>
-  <p>© 2026 purAIkerto · by bAIwor · powered by MiniMax M3 via GMI Cloud</p>
+  <p class="foot-brand">pur<span class="ai">AI</span>kerto — <span class="foot-tag">Information, made clear.</span></p>
+  <p class="foot-meta">© 2026 · dikurasi bAIwor · ditenagai MiniMax M3 via GMI Cloud</p>
 </footer>
 
-<!-- reasoning trace panel: hidden until an item is clicked -->
+<!-- reasoning trace panel: hidden until an item is clicked. This is the point of
+     the whole site, so it reads as a report, not a tooltip. -->
 <aside class="reason-panel" id="reason-panel" hidden aria-live="polite">
   <div class="reason-inner">
-    <button class="reason-close" type="button" aria-label="Close" id="reason-close">✕</button>
+    <button class="reason-close" type="button" aria-label="Tutup" id="reason-close">✕</button>
+    <p class="reason-kicker">Cara bAIwor memeriksa ini</p>
     <h3 id="reason-title">…</h3>
     <p class="reason-meta" id="reason-meta"></p>
+
+    <p class="reason-confidence">
+      <span class="rc-label">Seberapa yakin</span>
+      <strong id="reason-confidence">…</strong>
+      <span class="rc-bar" aria-hidden="true"><span class="rc-fill" id="reason-confidence-bar"></span></span>
+    </p>
+
     <section class="reason-block">
-      <h4>🧭 Plan</h4>
+      <h4><span class="rb-num">1</span> Rencana</h4>
       <ol id="reason-plan"></ol>
     </section>
     <section class="reason-block">
-      <h4>🔍 Steps</h4>
+      <h4><span class="rb-num">2</span> Langkah &amp; hasil</h4>
       <ol id="reason-steps"></ol>
     </section>
     <section class="reason-block">
-      <h4>📚 Sources</h4>
+      <h4><span class="rb-num">3</span> Sumber</h4>
       <ul id="reason-sources"></ul>
     </section>
     <section class="reason-block">
-      <h4>💬 Summary</h4>
+      <h4><span class="rb-num">4</span> Kesimpulan</h4>
       <p id="reason-summary"></p>
     </section>
-    <p class="reason-confidence">
-      Confidence: <strong id="reason-confidence">…</strong>
-    </p>
   </div>
 </aside>
 
 <!-- article view panel: hidden until an article is clicked -->
 <article class="article-panel" id="article-panel" hidden>
   <div class="article-panel-inner">
-    <button class="reason-close" type="button" aria-label="Close" id="article-close">✕</button>
+    <button class="reason-close" type="button" aria-label="Tutup" id="article-close">✕</button>
+    <p class="reason-kicker">Artikel bAIwor</p>
     <h1 id="article-title">…</h1>
     <p class="article-meta" id="article-meta"></p>
     <div class="article-body" id="article-body"></div>
     <section class="reason-block">
-      <h4>📚 Sources</h4>
+      <h4>Sumber</h4>
       <ul id="article-sources"></ul>
     </section>
-    <p class="article-confidence">Confidence: <strong id="article-confidence">…</strong></p>
+    <p class="article-confidence">
+      <span class="rc-label">Seberapa yakin</span>
+      <strong id="article-confidence">…</strong>
+    </p>
   </div>
 </article>
 
-<script src="assets/panel-reasoning.js?v=2" defer></script>
+<script src="assets/panel-reasoning.js?v=3" defer></script>
 </body>
 </html>
