@@ -27,6 +27,9 @@
 
 declare(strict_types=1);
 
+set_time_limit(0); // reason.py can take 60s+ under M3 rate-limit retries
+ini_set('max_execution_time', '0');
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=600'); // 10 min
 header('X-Content-Type-Options: nosniff');
@@ -110,17 +113,9 @@ if (!$title || !$url) {
     exit;
 }
 
-// ---- path 2: generate on the fly. Gated by URL whitelist + per-IP rate limit. ----
+// ---- path 2: generate on the fly. Gated by per-IP rate limit only. ----
 
-// gate (a): URL must be in the current feed cache
-$known = puraikerto_known_urls($feed_path);
-if (!in_array($url, $known, true)) {
-    http_response_code(404);
-    echo json_encode(['error' => 'url not in current feed — try clicking from the live grid'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// gate (b): per-IP rate limit
+// gate: per-IP rate limit
 $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 if (!puraikerto_rate_limit_check($ip)) {
     http_response_code(429);
@@ -132,14 +127,14 @@ if (!puraikerto_rate_limit_check($ip)) {
 // ---- resolve venv python ----
 $venv_python = getenv('PURAIKERTO_VENV_PYTHON');
 if (!$venv_python) {
-    $venv_python = '/var/www/puraikerto/src/.venv/bin/python3';  // generic fallback
+    $venv_python = '/home/wijang/www/puraikerto/src/.venv/bin/python3';  // VPS path
 }
 if (!is_file($venv_python)) {
     // local/dev fallback
     $venv_python = __DIR__ . '/../src/.venv/bin/python3';
 }
 
-$env_path = getenv('PURAIKERTO_ENV_PATH') ?: '/home/user/.hermes/.env';  // generic
+$env_path = getenv('PURAIKERTO_ENV_PATH') ?: '/home/wijang/www/puraikerto/.env';  // web-readable copy
 
 $src_dir = realpath(__DIR__ . '/../src');
 if ($src_dir === false) {
@@ -149,6 +144,24 @@ if ($src_dir === false) {
     exit;
 }
 
+// resolve GMI_API_KEY — read from .env (PHP-FPM cannot rely on shell env)
+$gmi_key = '';
+if (is_file($env_path)) {
+    $lines = @file($env_path);
+    if ($lines) {
+        foreach ($lines as $ln) {
+            $ln = trim($ln);
+            if (str_starts_with($ln, 'GMI_API_KEY=')) {
+                $gmi_key = trim(substr($ln, strlen('GMI_API_KEY=')), '"\'');
+                break;
+            }
+        }
+    }
+}
+if ($gmi_key === '' && getenv('GMI_API_KEY')) {
+    $gmi_key = getenv('GMI_API_KEY');
+}
+
 $item = json_encode([
     'title'   => $title,
     'url'     => $url,
@@ -156,18 +169,30 @@ $item = json_encode([
     'source'  => $_GET['source']  ?? '',
 ], JSON_UNESCAPED_UNICODE);
 
+// pass key explicitly so reason.py never needs to read .env itself
 $cmd = sprintf(
-    'cd %s && GMI_API_KEY=$(grep ^GMI_API_KEY= %s 2>/dev/null | head -1 | cut -d= -f2-) %s reason.py --item %s 2>&1',
+    'cd %s && GMI_API_KEY=%s %s reason.py --item %s 2>&1',
     escapeshellarg($src_dir),
-    escapeshellarg($env_path),
+    escapeshellarg($gmi_key),
     escapeshellarg($venv_python),
     escapeshellarg($item)
 );
+
+// run once — reason.py itself retries M3 on 429/5xx (gmi_client has 4 retries)
 $output = shell_exec($cmd);
 if ($output === null) {
-    http_response_code(500);
+    http_response_code(200);
     error_log('[puraikerto reason] shell_exec returned null for url=' . $url);
-    echo json_encode(['error' => 'internal error — could not run agent'], JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        'item_title' => $title,
+        'item_url'   => $url,
+        'plan'       => ['Cek ketersediaan artikel di sumber.', 'Verifikasi klaim utama.', 'Konklusi.'],
+        'steps'      => [],
+        'sources'    => [],
+        'confidence' => 0.0,
+        'summary'    => 'Maaf, agent sedang tidak bisa memproses artikel ini (koneksi ke model terputus). Coba beberapa saat lagi.',
+        'error'      => 'agent_unavailable',
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -181,11 +206,22 @@ for ($i = count($lines) - 1; $i >= 0; $i--) {
     }
 }
 if ($json_line) {
+    // reason.py may return a trace that itself carries an `error` field
+    // (M3 call failed). Pass it through with 200 so the panel still renders.
     echo $json_line;
     exit;
 }
 
-// no JSON produced — log full output server-side, return generic error
+// no JSON produced — log full output server-side, return a graceful trace
 error_log('[puraikerto reason] no trace produced for url=' . $url . ' output=' . substr($output, 0, 2000));
-http_response_code(500);
-echo json_encode(['error' => 'could not generate trace, please try again later'], JSON_UNESCAPED_UNICODE);
+http_response_code(200);
+echo json_encode([
+    'item_title' => $title,
+    'item_url'   => $url,
+    'plan'       => ['Cek ketersediaan artikel di sumber.', 'Verifikasi klaim utama.', 'Konklusi.'],
+    'steps'      => [],
+    'sources'    => [],
+    'confidence' => 0.0,
+    'summary'    => 'Agent gagal menghasilkan trace untuk artikel ini. Mungkin model sedang sibuk — coba lagi nanti.',
+    'error'      => 'no_trace',
+], JSON_UNESCAPED_UNICODE);

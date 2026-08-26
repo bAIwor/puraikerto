@@ -81,13 +81,35 @@ SYSTEM_PROMPT = (
 )
 
 
+import re as _re
+
+
+def _strip_html(s: str) -> str:
+    """Remove HTML tags and unescape common entities from a feed summary."""
+    if not s:
+        return ""
+    s = _re.sub(r"<[^>]+>", " ", s)          # drop tags
+    s = _re.sub(r"&nbsp;", " ", s)
+    s = _re.sub(r"&amp;", "&", s)
+    s = _re.sub(r"&quot;", '"', s)
+    s = _re.sub(r"&#39;|&apos;", "'", s)
+    s = _re.sub(r"&lt;", "<", s)
+    s = _re.sub(r"&gt;", ">", s)
+    s = _re.sub(r"\s+", " ", s)
+    return s.strip()
+
+
 def _item_to_user(item: dict) -> str:
+    title = _strip_html(item.get("title", "")).strip()
+    url = item.get("url", "").strip()
+    source = _strip_html(item.get("source", "")).strip()
+    summary = _strip_html(item.get("summary", "")).strip()[:600]
     return (
         f"Item untuk diverifikasi:\n"
-        f"Title: {item.get('title', '').strip()}\n"
-        f"URL: {item.get('url', '').strip()}\n"
-        f"Source: {item.get('source', '').strip()}\n"
-        f"Summary: {item.get('summary', '').strip()[:600]}\n\n"
+        f"Title: {title}\n"
+        f"URL: {url}\n"
+        f"Source: {source}\n"
+        f"Summary: {summary}\n\n"
         f"Buat plan, jalankan step-by-step, dan akhiri dengan confidence + summary."
     )
 
@@ -221,6 +243,9 @@ def main() -> int:
                 t.confidence,
                 len(t.steps),
             )
+        else:
+            # still emit a trace object so the endpoint can render a graceful panel
+            log.warning("trace for '%s' carried error: %s", (t.item_title or "")[:60], t.error)
         traces_out.append(d)
 
     write_trace_cache(traces_out, args.out)
