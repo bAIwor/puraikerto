@@ -1,13 +1,17 @@
 """
-gmi_client.py — thin wrapper around GMI Cloud's OpenAI-compatible API
-for MiniMax M3. Handles auth, retries, prompt caching hints, and cost tracking.
+gmi_client.py — thin wrapper around GMI Cloud's OpenAI-compatible API.
+Handles auth, retries, prompt caching hints, and cost tracking.
 
 Why this exists:
-- We use MiniMax M3 via GMI Cloud (free during MiniMaxathon 14-day campaign)
-- API is OpenAI-compatible, so we could just use `openai` lib, but a tiny wrapper
-  gives us: clear logging, easier mocking in tests, and one place to swap providers.
-- Reasoning trace endpoints get the same client but with `temperature=0.2` for more
-  deterministic multi-step output.
+- API is OpenAI-compatible; a tiny wrapper gives us clear logging,
+  easier mocking in tests, and one place to swap providers/models.
+- Reasoning trace endpoints get the same client but with `temperature=0.2`
+  for more deterministic multi-step output.
+
+Model selection (priority order — no hardcode needed):
+1. Pass `model=` explicitly to GMIClient()
+2. Set GMI_MODEL env var in ~/.hermes/.env  → any GMI-hosted model
+3. Falls back to DEFAULT_MODEL ("MiniMaxAI/MiniMax-M3") if neither is set
 
 Auth:
 - Read GMI_API_KEY from environment (NEVER hardcode).

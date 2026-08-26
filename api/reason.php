@@ -65,8 +65,10 @@ function puraikerto_known_urls(string $feed_path): array {
 }
 
 // ---- helper: per-IP rate limiter (file-based) ----
-function puraikerto_rate_limit_check(string $ip, int $max = 10, int $window_s = 60): bool {
-    // 10 req / 60s per IP. State lives in /tmp; ephemeral by design.
+function puraikerto_rate_limit_check(string $ip, int $max = 60, int $window_s = 60): bool {
+    // 60 req / 60s per IP (= 1/s average). State lives in /tmp; ephemeral by design.
+    // During MiniMaxathon free 14-day window, GMI Cloud quota is generous — raise limit
+    // so users can freely explore reasoning traces without hitting 429.
     $dir = sys_get_temp_dir() . '/puraikerto_rl';
     if (!is_dir($dir)) {
         @mkdir($dir, 0700, true);
