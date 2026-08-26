@@ -523,11 +523,21 @@
 
   // ------- article panel -------
   const ap = document.getElementById('article-panel');
+  const aClose = document.getElementById('article-close');
   const atitle = document.getElementById('article-title');
   const ameta = document.getElementById('article-meta');
   const abody = document.getElementById('article-body');
   const asources = document.getElementById('article-sources');
   const aconf = document.getElementById('article-confidence');
+
+  function hideArticle() {
+    if (ap) ap.hidden = true;
+    document.body.style.overflow = '';
+  }
+  aClose?.addEventListener('click', hideArticle);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideArticle();
+  });
 
   async function openArticle(card) {
     const id = card.dataset.id;
@@ -535,13 +545,15 @@
     const qs = new URLSearchParams();
     if (id) qs.set('id', id);
     else if (slug) qs.set('slug', slug);
+
     atitle.textContent = '…';
     ameta.textContent = '';
-    abody.innerHTML = '<p class="reason-loading">memuat artikel<span class="thinking-dots"></span></p>';
+    abody.innerHTML = '<p class="reason-loading" style="font-family:var(--font-mono);font-size:12px;color:var(--lime);">&gt; bAIwor: memuat isi artikel lengkap<span class="type-cursor">▋</span></p>';
     asources.innerHTML = '';
     aconf.textContent = '…';
     ap.hidden = false;
     document.body.style.overflow = 'hidden';
+
     try {
       const r = await fetch(API('/api/article.php?' + qs.toString()), { credentials: 'omit' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -553,16 +565,104 @@
         ${date ? `<span> · </span><span>${date}</span>` : ''}
         <span> · </span><span>${a.read_minutes || 3} min baca</span>
         ${a.grid_origin ? `<span> · </span><span class="src">dari grid ${escapeHtml(a.grid_origin)}</span>` : ''}
+        <span> · </span><span class="skip-hint" style="color:var(--muted);font-style:italic;">[klik untuk lewati animasi]</span>
       `;
-      abody.innerHTML = md(a.body || a.summary || '');
-      asources.innerHTML = (a.sources || []).map(s => {
-        const safe = escapeHtml(s);
-        const isUrl = /^https?:\/\//i.test(s);
-        return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>` : safe}</li>`;
-      }).join('') || '<li class="empty">tidak ada sumber</li>';
-      const c = typeof a.confidence === 'number' ? a.confidence : 0;
-      aconf.textContent = `${Math.round(c * 100)}%`;
-      aconf.style.color = c >= 0.7 ? 'var(--lime)' : c >= 0.4 ? 'var(--amber)' : 'var(--coral)';
+
+      const targetConf = typeof a.confidence === 'number' ? Math.round(a.confidence * 100) : 75;
+      const tone = (a.confidence || 0.7) >= 0.7 ? 'var(--lime)' : (a.confidence || 0.5) >= 0.4 ? 'var(--amber)' : 'var(--coral)';
+      aconf.style.color = tone;
+
+      // Animate confidence
+      let curConf = 0;
+      const confTimer = setInterval(() => {
+        if (curConf < targetConf) {
+          curConf = Math.min(targetConf, curConf + 5);
+          aconf.textContent = `${curConf}%`;
+        } else {
+          aconf.textContent = `${targetConf}%`;
+          clearInterval(confTimer);
+        }
+      }, 25);
+
+      const rawBody = a.body || a.summary || '';
+      const paragraphs = rawBody.split(/\n\n+/).filter(p => p.trim());
+      abody.innerHTML = '';
+
+      let isArticleSkipped = false;
+
+      // Stream article paragraphs with human typewriter rhythm
+      async function streamArticle() {
+        for (const p of paragraphs) {
+          if (isArticleSkipped || ap.hidden) return;
+          const pEl = document.createElement('div');
+          pEl.style.marginBottom = '14px';
+          pEl.style.lineHeight = '1.7';
+          abody.appendChild(pEl);
+
+          // Type paragraph text
+          const cursor = document.createElement('span');
+          cursor.className = 'type-cursor';
+          cursor.textContent = '▋';
+          pEl.appendChild(cursor);
+
+          let i = 0;
+          await new Promise((resolve) => {
+            function tick() {
+              if (isArticleSkipped || ap.hidden) {
+                cursor.remove();
+                pEl.innerHTML = md(p);
+                resolve();
+                return;
+              }
+              if (i < p.length) {
+                const char = p[i];
+                pEl.insertBefore(document.createTextNode(char), cursor);
+                i++;
+                let delay = 10;
+                if (char === '.' || char === '?' || char === '!') delay = 25;
+                else if (char === ',' || char === ':') delay = 18;
+                setTimeout(tick, delay);
+              } else {
+                cursor.remove();
+                pEl.innerHTML = md(p); // parse bold/links after finished
+                resolve();
+              }
+            }
+            tick();
+          });
+
+          await new Promise((r) => setTimeout(r, 60));
+        }
+
+        // Render sources
+        if (!isArticleSkipped && !ap.hidden) {
+          asources.innerHTML = (a.sources || []).map(s => {
+            const safe = escapeHtml(s);
+            const isUrl = /^https?:\/\//i.test(s);
+            return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+          }).join('') || '<li class="empty">tidak ada sumber</li>';
+        }
+      }
+
+      function instantArticle() {
+        isArticleSkipped = true;
+        aconf.textContent = `${targetConf}%`;
+        abody.innerHTML = md(rawBody);
+        asources.innerHTML = (a.sources || []).map(s => {
+          const safe = escapeHtml(s);
+          const isUrl = /^https?:\/\//i.test(s);
+          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+        }).join('') || '<li class="empty">tidak ada sumber</li>';
+      }
+
+      streamArticle();
+
+      // Click inside panel to skip animation immediately
+      ap.onclick = (e) => {
+        if (e.target.closest('a') || e.target.closest('button')) return;
+        instantArticle();
+      };
+
     } catch (e) {
       console.error(e);
       abody.innerHTML = `<p class="reason-loading" style="color:var(--coral)">gagal: ${escapeHtml(e.message)}</p>`;
