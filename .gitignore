@@ -26,8 +26,6 @@ api/cache_feed.json
 api/cache_article.json
 api/cache_reason.json
 
-# generated articles (runtime content, not source)
-articles/
 src/.cache/
 src/logs/
 !api/cache_feed.example.json
