@@ -144,22 +144,36 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .dock-tracker:hover { background: #188038; color: #ffffff; }
 .dock-pulse:hover   { background: #f9ab00; color: var(--border); }
 
-/* one-line lede: clear statement without occupying a screenful */
-.lede {
+/* standalone brief box — clean framed container above the 4 grids */
+.brief-wrap {
   max-width: 1400px;
-  margin: 18px auto 0;
+  margin: 18px auto 2px;
   padding: 0 18px;
-  color: var(--fg-dim);
+}
+.brief-box {
+  background: var(--card);
+  border: 2.5px solid #000000;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 #000000;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+}
+.brief-text {
+  margin: 0;
+  color: var(--fg);
   font-size: 13.5px;
-  line-height: 1.6;
+  line-height: 1.5;
   text-wrap: pretty;
 }
-.lede strong { color: #000000; font-weight: 800; }
-.lede em { color: var(--lime); font-style: normal; font-weight: 700; }
+.brief-text strong { color: #000000; font-weight: 800; }
+.brief-text em { color: var(--lime); font-style: normal; font-weight: 700; }
 
 @media (max-width: 768px) {
   .nav-dock { display: none; }
-  .lede { padding: 0 10px; margin: 14px auto 0; font-size: 13px; }
+  .brief-wrap { padding: 0 10px; margin: 12px auto 0; }
+  .brief-box { padding: 10px 12px; }
+  .brief-text { font-size: 13px; }
 }
 
 /* ---------- grids ---------- */
