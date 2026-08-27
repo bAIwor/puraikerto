@@ -1,9 +1,6 @@
 /* purAIkerto — bAIwor theme, responsive, mobile-first */
 
-:root,
-[data-theme="vintage"],
-[data-theme="dark"],
-[data-theme="light"] {
+:root {
   /* Monochrome Editorial palette — white base, pure black borders, grayscale surfaces */
   --bg:     #ffffff;   /* background utama */
   --bg-2:   #dddddd;   /* topbar, statusbar surface */
@@ -127,18 +124,6 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   flex-wrap: wrap;
   margin-left: auto;
 }
-.theme-toggle {
-  font-size: 13px;
-  line-height: 1;
-  background: #dddddd;
-  color: #000000;
-  border: 1.5px solid #000000;
-  border-radius: 4px;
-  padding: 5px 8px;
-  cursor: pointer;
-  box-shadow: 1.5px 1.5px 0 #000000;
-}
-.theme-toggle:hover { background: #000000; color: #ffffff; }
 .dock-pill {
   font-family: var(--font-mono);
   font-size: 11px;

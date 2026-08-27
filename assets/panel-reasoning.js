@@ -38,23 +38,6 @@
     return h;
   }
 
-  // ------- theme toggle -------
-  const themeBtn = document.getElementById('theme-toggle');
-  function currentTheme() {
-    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-  }
-  function applyThemeIcon() {
-    if (themeBtn) themeBtn.textContent = currentTheme() === 'light' ? '☀️' : '🌙';
-  }
-  function toggleTheme() {
-    const next = currentTheme() === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('puraikerto-theme', next); } catch (e) { /* ignore, e.g. private mode */ }
-    applyThemeIcon();
-  }
-  themeBtn?.addEventListener('click', toggleTheme);
-  applyThemeIcon();
-
   // ------- grid items -------
   const GRIDS = ['RADAR', 'SIGNAL', 'TRACKER', 'PULSE'];
   function confClass(c) {
