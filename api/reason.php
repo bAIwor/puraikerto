@@ -172,7 +172,9 @@ $item = json_encode([
 ], JSON_UNESCAPED_UNICODE);
 
 // pass key explicitly so reason.py never needs to read .env itself
-// hard timeout: 45s. Uses `env` to avoid nested quote breaking from bash -c
+// `timeout 45`: shell-level hard kill so PHP responds before Cloudflare's 100s limit fires (prevents 524).
+// --max-retries 1: fail fast on M3 rate-limit for browser on-demand requests;
+//   batch pre-warm (puraikerto-sync.sh) calls reason.py directly with higher retries.
 $cmd = sprintf(
     'timeout 45 env GMI_API_KEY=%s %s %s/reason.py --item %s --max-retries 1 2>&1',
     escapeshellarg($gmi_key),
