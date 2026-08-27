@@ -761,11 +761,12 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 }
 .sec-head h2 {
   font-family: var(--font-mono);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   margin: 0;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #000000;
+  text-transform: none;
 }
 .sec-sub { color: var(--muted); font-size: 11.5px; margin: 0; }
 
