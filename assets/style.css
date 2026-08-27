@@ -44,7 +44,7 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .ai { color: var(--coral); font-weight: 900; letter-spacing: 0.5px; }
 .g-blue   { color: #1a73e8; font-weight: 800; }
 .g-red    { color: #d93025; font-weight: 800; }
-.g-yellow { color: #b45309; font-weight: 800; }
+.g-yellow { color: #e37400; font-weight: 800; }
 .g-green  { color: #188038; font-weight: 800; }
 
 /* ---------- topbar: instrument panel, not a masthead ---------- */
