@@ -784,6 +784,15 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .foot-brand { color: var(--border); font-weight: 800; }
 .foot-tag { color: #555555; font-weight: 600; }
 .foot-meta { font-size: 11px; color: #555555; }
+.foot-link {
+  color: #000000;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.foot-link:hover {
+  color: var(--cyan);
+}
 
 /* ---------- reason panel: reads as a report, not a tooltip ---------- */
 .reason-panel {
