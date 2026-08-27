@@ -89,8 +89,12 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  font-weight: 700;
+  font-weight: 800;
 }
+.st-key.g-blue   { color: #1a73e8; }
+.st-key.g-red    { color: #d93025; }
+.st-key.g-green  { color: #188038; }
+.st-key.g-yellow { color: #e37400; }
 .st-val {
   color: #000000;
   font-variant-numeric: tabular-nums;
