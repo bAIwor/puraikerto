@@ -275,7 +275,7 @@
         </section>
 
         <section class="reason-block block-conclusion">
-          <h4>bAIwor Assessment</h4>
+          <h4>b<span class="ai">AI</span>wor Assessment</h4>
           <p class="summary-text"></p>
         </section>
       </div>
