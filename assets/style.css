@@ -144,21 +144,52 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .dock-tracker:hover { background: #188038; color: #ffffff; }
 .dock-pulse:hover   { background: #f9ab00; color: var(--border); }
 
-/* one-line lede: says what this is without occupying a screenful */
-.lede {
-  max-width: 1200px;
-  margin: 18px auto 4px;
+/* standalone brief banner — clean separation above the 4 grids */
+.brief-wrap {
+  max-width: 1400px;
+  margin: 18px auto 2px;
   padding: 0 18px;
-  color: var(--fg-dim);
+}
+.brief-box {
+  background: var(--card);
+  border: 2.5px solid #000000;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 #000000;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.brief-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #000000;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.brief-text {
+  margin: 0;
+  color: var(--fg);
   font-size: 13.5px;
-  line-height: 1.6;
+  line-height: 1.5;
+  flex: 1;
+  min-width: 240px;
   text-wrap: pretty;
 }
-.lede strong { color: var(--fg); font-weight: 600; }
-.lede em { color: var(--lime); font-style: normal; }
+.brief-text strong { color: #000000; font-weight: 800; }
+.brief-text em { color: var(--lime); font-style: normal; font-weight: 700; }
 
 @media (max-width: 768px) {
   .nav-dock { display: none; }
+  .brief-wrap { padding: 0 10px; margin: 12px auto 0; }
+  .brief-box { padding: 10px 12px; gap: 8px; }
+  .brief-text { font-size: 13px; }
 }
 
 /* ---------- grids ---------- */

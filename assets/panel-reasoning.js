@@ -245,37 +245,37 @@
     drawer.innerHTML = `
       <div class="inline-drawer-inner">
         <div class="inline-meta-bar">
-          <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">buka sumber asli ↗</a>
+          <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">original source ↗</a>
           <span>·</span>
           <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
           <span>·</span>
-          <span>${(trace.steps || []).length} langkah</span>
-          <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
+          <span>${(trace.steps || []).length} steps</span>
+          <button type="button" class="drawer-close-btn" aria-label="Close accordion">✕ Close</button>
         </div>
 
         <div class="reason-confidence">
-          <span class="rc-label">Tingkat Keyakinan</span>
+          <span class="rc-label">Verification Confidence</span>
           <strong class="rc-num">0%</strong>
           <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:0%"></span></span>
         </div>
 
         <section class="reason-block block-plan">
-          <h4>Rencana Pemeriksaan</h4>
+          <h4>Verification Plan</h4>
           <ol class="typewriter-plan-list"></ol>
         </section>
 
         <section class="reason-block block-steps">
-          <h4>Langkah & Hasil Verifikasi</h4>
+          <h4>Execution &amp; Verification Steps</h4>
           <ol class="typewriter-steps-list"></ol>
         </section>
 
         <section class="reason-block block-sources">
-          <h4>Sumber Rujukan</h4>
+          <h4>Referenced Sources</h4>
           <ul class="typewriter-sources-list"></ul>
         </section>
 
         <section class="reason-block block-conclusion">
-          <h4>Kesimpulan bAIwor</h4>
+          <h4>bAIwor Assessment</h4>
           <p class="summary-text"></p>
         </section>
       </div>
@@ -296,7 +296,7 @@
       if (numEl) numEl.textContent = `${targetPct}%`;
 
       if (planOl) {
-        planOl.innerHTML = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">tidak ada plan</li>';
+        planOl.innerHTML = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">no plan recorded</li>';
       }
       if (stepsOl) {
         stepsOl.innerHTML = (trace.steps || []).map((s) => `
@@ -304,14 +304,14 @@
             <strong>${escapeHtml(s.action || '')}.</strong>
             <span class="step-detail-text">${escapeHtml(s.detail || '')}</span>
             <span class="step-outcome step-outcome-pop ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
-          </li>`).join('') || '<li class="empty">tidak ada step</li>';
+          </li>`).join('') || '<li class="empty">no steps recorded</li>';
       }
       if (sourcesUl) {
         sourcesUl.innerHTML = (trace.sources || []).map((s) => {
           const safe = escapeHtml(s);
           const isUrl = /^https?:\/\//i.test(s);
           return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-        }).join('') || '<li class="empty">tidak ada sumber tercatat</li>';
+        }).join('') || '<li class="empty">no sources cited</li>';
       }
       if (sumEl) {
         sumEl.textContent = trace.summary || '—';
@@ -559,16 +559,16 @@
       drawer.innerHTML = `
         <div class="inline-drawer-inner">
           <div class="inline-meta-bar">
-            <span>oleh ${escapeHtml(a.author || 'bAIwor')}</span>
+            <span>by ${escapeHtml(a.author || 'bAIwor')}</span>
             ${date ? `<span>·</span><span>${date}</span>` : ''}
             <span>·</span>
-            <span>${a.read_minutes || 3} min baca</span>
-            ${a.grid_origin ? `<span>·</span><span class="src">dari grid ${escapeHtml(a.grid_origin)}</span>` : ''}
-            <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
+            <span>${a.read_minutes || 3} min read</span>
+            ${a.grid_origin ? `<span>·</span><span class="src">from grid ${escapeHtml(a.grid_origin)}</span>` : ''}
+            <button type="button" class="drawer-close-btn" aria-label="Close accordion">✕ Close</button>
           </div>
 
           <div class="reason-confidence">
-            <span class="rc-label">Tingkat Keyakinan</span>
+            <span class="rc-label">Verification Confidence</span>
             <strong class="article-rc-num">0%</strong>
             <span class="rc-bar" aria-hidden="true"><span class="article-rc-fill" style="width:0%"></span></span>
           </div>
@@ -576,7 +576,7 @@
           <div class="article-body-stream"></div>
 
           <section class="reason-block">
-            <h4>Sumber Rujukan</h4>
+            <h4>Referenced Sources</h4>
             <ul class="article-sources-stream"></ul>
           </section>
         </div>
