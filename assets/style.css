@@ -144,8 +144,22 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 .dock-tracker:hover { background: #188038; color: #ffffff; }
 .dock-pulse:hover   { background: #f9ab00; color: var(--border); }
 
+/* one-line lede: clear statement without occupying a screenful */
+.lede {
+  max-width: 1400px;
+  margin: 18px auto 0;
+  padding: 0 18px;
+  color: var(--fg-dim);
+  font-size: 13.5px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.lede strong { color: #000000; font-weight: 800; }
+.lede em { color: var(--lime); font-style: normal; font-weight: 700; }
+
 @media (max-width: 768px) {
   .nav-dock { display: none; }
+  .lede { padding: 0 10px; margin: 14px auto 0; font-size: 13px; }
 }
 
 /* ---------- grids ---------- */
@@ -153,7 +167,7 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 18px;
-  padding: 20px 18px 24px;
+  padding: 14px 18px 24px;
   max-width: 1400px;
   margin: 0 auto;
 }
