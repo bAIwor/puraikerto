@@ -75,4 +75,8 @@ foreach ($files as $path) {
     ];
 }
 
+usort($out, function($a, $b) {
+    return strcmp($b['created_at'] ?? '', $a['created_at'] ?? '');
+});
+
 echo json_encode(['articles' => $out, 'count' => count($out)], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
