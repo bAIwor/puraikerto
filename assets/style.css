@@ -108,22 +108,22 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   box-shadow: 0 0 0 0 currentColor;
 }
 .st-live.is-ok   .st-dot { background: #15803d; animation: st-breathe 2.6s ease-in-out infinite; }
-.st-live.is-warn .st-dot { background: #b45309; }
+.st-live.is-warn .st-dot { background: #7c3aed; }
 .st-live.is-err  .st-dot { background: #d9381e; }
 .st-live.is-ok   { color: #15803d; }
-.st-live.is-warn { color: #b45309; }
+.st-live.is-warn { color: #000000; }
 .st-live.is-err  { color: #d9381e; }
 @keyframes st-breathe {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.35; }
 }
 .st-warn {
-  color: #b45309;
+  color: #7c3aed;
   border-left: 1.5px solid #000000;
   padding-left: 8px;
   text-transform: none;
   letter-spacing: 0;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .nav-dock {
