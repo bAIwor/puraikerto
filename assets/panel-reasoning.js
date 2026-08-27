@@ -553,8 +553,13 @@
       const date = a.created_at ? new Date(a.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '';
       const targetConf = typeof a.confidence === 'number' ? Math.round(a.confidence * 100) : 75;
 
-      const rawBody = a.body || a.summary || '';
-      const paragraphs = rawBody.split(/\n\n+/).filter(p => p.trim());
+      let currentLang = 'en';
+      let isArticleSkipped = false;
+
+      function getParagraphs(lang) {
+        const text = (lang === 'id' && a.body_id) ? a.body_id : (a.body || a.summary || '');
+        return text.split(/\n\n+/).filter(p => p.trim());
+      }
 
       drawer.innerHTML = `
         <div class="inline-drawer-inner">
@@ -564,6 +569,7 @@
             <span>·</span>
             <span>${a.read_minutes || 3} min read</span>
             ${a.grid_origin ? `<span>·</span><span class="src">from grid ${escapeHtml(a.grid_origin)}</span>` : ''}
+            ${a.body_id ? `<button type="button" class="article-trans-btn" aria-label="Translate to Indonesian">🌐 Terjemahkan ke Bahasa Indonesia</button>` : ''}
             <button type="button" class="drawer-close-btn" aria-label="Close accordion">✕ Close</button>
           </div>
 
@@ -586,6 +592,21 @@
       const numEl = drawer.querySelector('.article-rc-num');
       const bodyEl = drawer.querySelector('.article-body-stream');
       const sourcesEl = drawer.querySelector('.article-sources-stream');
+      const transBtn = drawer.querySelector('.article-trans-btn');
+
+      if (transBtn) {
+        transBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isArticleSkipped = true;
+          currentLang = (currentLang === 'en') ? 'id' : 'en';
+          transBtn.textContent = (currentLang === 'id') ? '🌐 Show Original (English)' : '🌐 Terjemahkan ke Bahasa Indonesia';
+          bodyEl.innerHTML = '';
+          setTimeout(() => {
+            isArticleSkipped = false;
+            streamArticle(getParagraphs(currentLang));
+          }, 30);
+        });
+      }
 
       // 1. Animate confidence
       if (fillEl) fillEl.style.width = `${targetConf}%`;
@@ -600,10 +621,8 @@
         }
       }, 25);
 
-      let isArticleSkipped = false;
-
       // 2. Stream article paragraphs with human typewriter rhythm
-      async function streamArticle() {
+      async function streamArticle(paragraphs) {
         for (const p of paragraphs) {
           if (isArticleSkipped || !drawer.isConnected) return;
           const pEl = document.createElement('div');
@@ -654,11 +673,11 @@
             const safe = escapeHtml(s);
             const isUrl = /^https?:\/\//i.test(s);
             return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-          }).join('') || '<li class="empty">tidak ada sumber</li>';
+          }).join('') || '<li class="empty">no sources cited</li>';
         }
       }
 
-      streamArticle();
+      streamArticle(getParagraphs(currentLang));
 
     } catch (e) {
       console.error(e);

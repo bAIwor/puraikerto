@@ -62,8 +62,10 @@ foreach ($files as $path) {
     $out[] = [
         'id' => $a['id'] ?? '',
         'title' => $a['title'] ?? '',
+        'title_id' => $a['title_id'] ?? '',
         'slug' => $a['slug'] ?? '',
         'summary' => $a['summary'] ?? '',
+        'summary_id' => $a['summary_id'] ?? '',
         'topic' => $a['topic'] ?? '',
         'grid_origin' => $a['grid_origin'] ?? '',
         'confidence' => $a['confidence'] ?? 0,
