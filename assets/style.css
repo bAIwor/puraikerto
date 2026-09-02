@@ -39,6 +39,11 @@ html, body {
 a { color: var(--cyan); text-decoration: none; }
 a:hover { text-decoration: underline; }
 a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.grid-items li[tabindex]:focus-visible,
+.article-card[tabindex]:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
 
 .brand, .ai, em { font-style: normal; }
 .ai { color: var(--coral); font-weight: 900; letter-spacing: 0.5px; }
@@ -409,6 +414,26 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   line-height: 1.2;
 }
 .inline-meta-bar .article-trans-btn:hover {
+  background: #000000;
+  color: #ffffff;
+}
+.inline-meta-bar .drawer-skip-btn,
+.inline-meta-bar .article-skip-btn {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #000000;
+  background: #ffffff;
+  border: 1.5px solid #000000;
+  border-radius: 4px;
+  padding: 3px 9px;
+  cursor: pointer;
+  box-shadow: 1.5px 1.5px 0 #000000;
+  transition: all 0.12s ease;
+  line-height: 1.2;
+}
+.inline-meta-bar .drawer-skip-btn:hover,
+.inline-meta-bar .article-skip-btn:hover {
   background: #000000;
   color: #ffffff;
 }
@@ -842,6 +867,8 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 @keyframes slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) {
   .reason-panel, .article-panel { animation: none; }
+  .type-cursor { animation: none; }
+  .anim-detect-zoom, .anim-prioritize-bob, .anim-follow-glide, .anim-pulse-thump { animation: none; }
 }
 .reason-inner { padding: 22px 22px 60px; }
 .reason-close {
