@@ -71,6 +71,8 @@
     const list = document.getElementById(`grid-${grid}`);
     if (!list) return;
     const displayTitle = (grid === 'PULSE') ? pulseSentenceCase : (t) => t;
+    // never clobber an open reading drawer mid-stream
+    if (list.querySelector('.is-open')) return;
     if (!items || items.length === 0) {
       list.innerHTML = '<li class="empty-row" style="background:transparent;border:none;cursor:default"><span style="color:var(--muted);font-style:italic">Tidak ada item di grid ini untuk window saat ini.</span></li>';
       return;
@@ -83,7 +85,7 @@
         const srcText = (it.source || '').slice(0, 36);
         const title = displayTitle(it.title);
         return `
-        <li data-idx="${i}" data-title="${escapeHtml(it.title)}" data-url="${escapeHtml(it.url)}" data-summary="${escapeHtml(it.summary || '')}" data-source="${escapeHtml(it.source || '')}" data-grid="${grid}" data-gridtag="${gridTag}">
+        <li data-idx="${i}" tabindex="0" role="button" aria-expanded="false" data-title="${escapeHtml(it.title)}" data-url="${escapeHtml(it.url)}" data-summary="${escapeHtml(it.summary || '')}" data-source="${escapeHtml(it.source || '')}" data-grid="${grid}" data-gridtag="${gridTag}">
           <div class="it-title">${escapeHtml(title)}</div>
           ${it.blurb ? `<div class="it-blurb">${escapeHtml(it.blurb)}</div>` : ''}
           <div class="it-meta">
@@ -102,6 +104,8 @@
   async function loadArticles() {
     const list = document.getElementById('article-list');
     if (!list) return;
+    // don't blow away an open article mid-read
+    if (list.querySelector('.article-card.is-open')) return;
     try {
       const r = await fetch(API('/api/article.php'), { credentials: 'omit' });
       if (!r.ok) {
@@ -117,7 +121,7 @@
       list.innerHTML = arts.map(a => {
         const date = a.created_at ? new Date(a.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '';
         return `
-        <div class="article-card" data-id="${escapeHtml(a.id)}" data-slug="${escapeHtml(a.slug)}">
+        <div class="article-card" tabindex="0" role="button" aria-expanded="false" data-id="${escapeHtml(a.id)}" data-slug="${escapeHtml(a.slug)}">
           <span class="grid-tag tag-${escapeHtml(a.grid_origin || '').toLowerCase()}">${escapeHtml(a.grid_origin || 'bAIwor')}</span>
           <h3>${escapeHtml(a.title)}</h3>
           <p>${escapeHtml(a.summary)}</p>
@@ -234,11 +238,20 @@
   }
 
   // ------- fetch all grids -------
+  function renderFeedError(msg) {
+    for (const g of GRIDS) {
+      const list = document.getElementById(`grid-${g}`);
+      if (!list || list.querySelector('.is-open')) continue;
+      list.innerHTML = `<li class="empty-row" style="background:transparent;border:none;cursor:default"><span style="color:var(--muted);font-style:italic">Gagal memuat umpan (${escapeHtml(msg)}) — <a href="#" class="feed-retry" style="color:var(--lime);font-weight:700">coba lagi</a></span></li>`;
+    }
+  }
+
   async function loadFeed() {
     try {
       const r = await fetch(API('/api/feed.php'), { credentials: 'omit' });
       if (!r.ok) {
         setStatus(null, `HTTP ${r.status}`);
+        renderFeedError(`HTTP ${r.status}`);
         return;
       }
       const data = await r.json();
@@ -251,6 +264,7 @@
     } catch (e) {
       console.error(e);
       setStatus(null, e.message || 'gagal memuat');
+      renderFeedError(e.message || 'gagal memuat');
     }
   }
 
@@ -467,6 +481,7 @@
           <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
           <span>·</span>
           <span>${(trace.steps || []).length} steps</span>
+          <button type="button" class="drawer-skip-btn" aria-label="Tampilkan semua tanpa animasi">⚡ Skip animasi</button>
           <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
         </div>
 
@@ -513,10 +528,59 @@
       });
     }
 
+    let isSkipped = false;
+    let countInterval = null;
+
+    const skipBtn = drawer.querySelector('.drawer-skip-btn');
+    if (skipBtn) {
+      skipBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isSkipped = true;
+        skipBtn.hidden = true;
+        if (countInterval) clearInterval(countInterval);
+        renderInstant();
+      });
+    }
+
+    // readers who opt out of motion get the content immediately
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      skipBtn?.remove();
+      renderInstant();
+      return;
+    }
+
+    // Full Instant Render (fallback / on skip)
+    function renderInstant() {
+      if (fillEl) fillEl.style.width = `${targetPct}%`;
+      if (numEl) numEl.textContent = `${targetPct}%`;
+
+      if (planOl) {
+        planOl.innerHTML = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">no plan recorded</li>';
+      }
+      if (stepsOl) {
+        stepsOl.innerHTML = (trace.steps || []).map((s) => `
+          <li>
+            <strong>${escapeHtml(s.action || '')}.</strong>
+            <span class="step-detail-text">${escapeHtml(s.detail || '')}</span>
+            <span class="step-outcome step-outcome-pop ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
+          </li>`).join('') || '<li class="empty">no steps recorded</li>';
+      }
+      if (sourcesUl) {
+        sourcesUl.innerHTML = (trace.sources || []).map((s) => {
+          const safe = escapeHtml(s);
+          const isUrl = /^https?:\/\//i.test(s);
+          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+        }).join('') || '<li class="empty">no sources cited</li>';
+      }
+      if (sumEl) {
+        sumEl.textContent = trace.summary || '—';
+      }
+    }
+
     async function runLegacySequence() {
       if (fillEl) fillEl.style.width = `${targetPct}%`;
       let currentVal = 0;
-      const countInterval = setInterval(() => {
+      countInterval = setInterval(() => {
         if (currentVal < targetPct) {
           currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 15) || 1);
           if (numEl) numEl.textContent = `${currentVal}%`;
@@ -577,9 +641,13 @@
     runLegacySequence();
   }
 
+  // last item/card opened, so Escape can return focus to it
+  let lastActivated = null;
+
   function closeAllDrawers() {
     document.querySelectorAll('.grid-items li.is-open').forEach((el) => {
       el.classList.remove('is-open');
+      el.setAttribute('aria-expanded', 'false');
       const oldDrawer = el.querySelector('.inline-reason-drawer');
       if (oldDrawer) {
         oldDrawer.classList.remove('is-expanded');
@@ -588,6 +656,7 @@
     });
     document.querySelectorAll('.article-card.is-open').forEach((el) => {
       el.classList.remove('is-open');
+      el.setAttribute('aria-expanded', 'false');
       const oldDrawer = el.querySelector('.article-inline-drawer');
       if (oldDrawer) {
         oldDrawer.classList.remove('is-expanded');
@@ -606,6 +675,8 @@
     if (isAlreadyOpen) return;
 
     li.classList.add('is-open');
+    li.setAttribute('aria-expanded', 'true');
+    lastActivated = li;
 
     const title = li.dataset.title;
     const url = li.dataset.url;
@@ -666,6 +737,8 @@
     if (isAlreadyOpen) return;
 
     card.classList.add('is-open');
+    card.setAttribute('aria-expanded', 'true');
+    lastActivated = card;
 
     const id = card.dataset.id;
     const slug = card.dataset.slug;
@@ -702,6 +775,7 @@
 
       let currentLang = 'en';
       let isArticleSkipped = false;
+      let instantArticle = false;
 
       function getParagraphs(lang) {
         const text = (lang === 'id' && a.body_id) ? a.body_id : (a.body || a.summary || '');
@@ -717,6 +791,7 @@
             <span>${a.read_minutes || 3} min read</span>
             ${a.grid_origin ? `<span>·</span><span class="src">from grid ${escapeHtml(a.grid_origin)}</span>` : ''}
             ${a.body_id ? `<button type="button" class="article-trans-btn" aria-label="Translate to Indonesian">🌐 Terjemahkan ke Bahasa Indonesia</button>` : ''}
+            <button type="button" class="article-skip-btn" aria-label="Tampilkan semua tanpa animasi">⚡ Skip animasi</button>
             <button type="button" class="drawer-close-btn" aria-label="Close accordion">✕ Close</button>
           </div>
 
@@ -740,6 +815,8 @@
       const bodyEl = drawer.querySelector('.article-body-stream');
       const sourcesEl = drawer.querySelector('.article-sources-stream');
       const transBtn = drawer.querySelector('.article-trans-btn');
+      const skipBtn = drawer.querySelector('.article-skip-btn');
+      const prefersReduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
       if (transBtn) {
         transBtn.addEventListener('click', (e) => {
@@ -755,23 +832,59 @@
         });
       }
 
-      // 1. Animate confidence
+      if (skipBtn) {
+        skipBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          instantArticle = true;
+          skipBtn.hidden = true;
+        });
+      }
+
+      function renderSources() {
+        if (!sourcesEl || !drawer.isConnected) return;
+        sourcesEl.innerHTML = (a.sources || []).map(s => {
+          const safe = escapeHtml(s);
+          const isUrl = /^https?:\/\//i.test(s);
+          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
+        }).join('') || '<li class="empty">no sources cited</li>';
+      }
+
+      function renderAllParagraphs(paragraphs) {
+        bodyEl.insertAdjacentHTML('beforeend', paragraphs
+          .map(p => `<div style="margin-bottom:14px;line-height:1.7;font-size:14px;color:var(--fg)">${md(p)}</div>`)
+          .join(''));
+      }
+
+      // 1. Animate confidence (instant for reduced motion)
       if (fillEl) fillEl.style.width = `${targetConf}%`;
-      let curConf = 0;
-      const confTimer = setInterval(() => {
-        if (curConf < targetConf) {
-          curConf = Math.min(targetConf, curConf + Math.ceil(targetConf / 15) || 1);
-          if (numEl) numEl.textContent = `${curConf}%`;
-        } else {
-          if (numEl) numEl.textContent = `${targetConf}%`;
-          clearInterval(confTimer);
-        }
-      }, 25);
+      if (prefersReduced) {
+        if (numEl) numEl.textContent = `${targetConf}%`;
+      } else {
+        let curConf = 0;
+        const confTimer = setInterval(() => {
+          if (curConf < targetConf) {
+            curConf = Math.min(targetConf, curConf + Math.ceil(targetConf / 15) || 1);
+            if (numEl) numEl.textContent = `${curConf}%`;
+          } else {
+            if (numEl) numEl.textContent = `${targetConf}%`;
+            clearInterval(confTimer);
+          }
+        }, 25);
+      }
 
       // 2. Stream article paragraphs with human typewriter rhythm
       async function streamArticle(paragraphs) {
-        for (const p of paragraphs) {
+        for (let i = 0; i < paragraphs.length; i++) {
+          const p = paragraphs[i];
           if (isArticleSkipped || !drawer.isConnected) return;
+          if (instantArticle) {
+            // finish the rest instantly without duplicating typed paragraphs
+            const done = Math.max(i, bodyEl.children.length);
+            renderAllParagraphs(paragraphs.slice(done));
+            renderSources();
+            if (skipBtn) skipBtn.hidden = true;
+            return;
+          }
           const pEl = document.createElement('div');
           pEl.style.marginBottom = '14px';
           pEl.style.lineHeight = '1.7';
@@ -785,19 +898,19 @@
           cursor.textContent = '▋';
           pEl.appendChild(cursor);
 
-          let i = 0;
+          let j = 0;
           await new Promise((resolve) => {
             function tick() {
-              if (isArticleSkipped || !drawer.isConnected) {
+              if (isArticleSkipped || instantArticle || !drawer.isConnected) {
                 cursor.remove();
                 pEl.innerHTML = md(p);
                 resolve();
                 return;
               }
-              if (i < p.length) {
-                const char = p[i];
+              if (j < p.length) {
+                const char = p[j];
                 pEl.insertBefore(document.createTextNode(char), cursor);
-                i++;
+                j++;
                 let delay = 14;
                 if (char === '.' || char === '?' || char === '!') delay = 32;
                 else if (char === ',' || char === ':') delay = 22;
@@ -814,14 +927,12 @@
           await new Promise((r) => setTimeout(r, 60));
         }
 
-        // Render sources
-        if (!isArticleSkipped && drawer.isConnected && sourcesEl) {
-          sourcesEl.innerHTML = (a.sources || []).map(s => {
-            const safe = escapeHtml(s);
-            const isUrl = /^https?:\/\//i.test(s);
-            return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-          }).join('') || '<li class="empty">no sources cited</li>';
-        }
+        renderSources();
+      }
+
+      if (prefersReduced) {
+        instantArticle = true;
+        if (skipBtn) skipBtn.hidden = true;
       }
 
       streamArticle(getParagraphs(currentLang));
@@ -846,14 +957,26 @@
     const sel = window.getSelection();
     if (sel && sel.toString().trim().length > 0) return;
 
-    // If clicking an external link, let it open normally
-    if (e.target.closest('a')) return;
-
     // If clicking explicit close button
     if (e.target.closest('.drawer-close-btn')) {
       closeAllDrawers();
       return;
     }
+
+    // Manual retry from a feed-error row
+    const retryLink = e.target.closest('.feed-retry');
+    if (retryLink) {
+      e.preventDefault();
+      loadFeed();
+      return;
+    }
+
+    // If clicking an external link, let it open normally
+    if (e.target.closest('a')) return;
+
+    // Clicks inside an open drawer (links & close handled above)
+    // must not collapse the reading surface
+    if (e.target.closest('.inline-reason-drawer, .article-inline-drawer')) return;
 
     const li = e.target.closest('.grid-items li[data-idx]');
     if (li) {
@@ -869,6 +992,31 @@
 
     // Clicking anywhere outside any open item -> close all open accordions!
     closeAllDrawers();
+  });
+
+  // keyboard: Enter/Space opens a focused item, Escape closes any open drawer
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const open = document.querySelector('.grid-items li.is-open, .article-card.is-open');
+      if (open) {
+        closeAllDrawers();
+        lastActivated?.focus({ preventScroll: true });
+      }
+      return;
+    }
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (!(e.target instanceof Element)) return;
+    const li = e.target.closest('.grid-items li[data-idx]');
+    if (e.target === li) {
+      e.preventDefault();
+      openItem(li);
+      return;
+    }
+    const ac = e.target.closest('.article-card[data-id], .article-card[data-slug]');
+    if (e.target === ac) {
+      e.preventDefault();
+      openArticle(ac);
+    }
   });
 
   // boot
