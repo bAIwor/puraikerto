@@ -129,14 +129,23 @@ if (!puraikerto_rate_limit_check($ip)) {
 // ---- resolve venv python ----
 $venv_python = getenv('PURAIKERTO_VENV_PYTHON');
 if (!$venv_python) {
-    $venv_python = '/home/wijang/www/puraikerto/src/.venv/bin/python3';  // VPS path
-}
-if (!is_file($venv_python)) {
-    // local/dev fallback
-    $venv_python = __DIR__ . '/../src/.venv/bin/python3';
+    if (is_file('/usr/bin/python3')) {
+        $venv_python = '/usr/bin/python3';
+    } elseif (is_file('/home/wijang/www/puraikerto/src/.venv/bin/python3')) {
+        $venv_python = '/home/wijang/www/puraikerto/src/.venv/bin/python3';
+    } else {
+        $venv_python = __DIR__ . '/../src/.venv/bin/python3';
+    }
 }
 
-$env_path = getenv('PURAIKERTO_ENV_PATH') ?: '/home/wijang/www/puraikerto/.env';  // web-readable copy
+$env_path = getenv('PURAIKERTO_ENV_PATH');
+if (!$env_path || !is_file($env_path)) {
+    if (is_file(__DIR__ . '/../.env')) {
+        $env_path = __DIR__ . '/../.env';
+    } else {
+        $env_path = '/home/wijang/www/puraikerto/.env';
+    }
+}
 
 $src_dir = realpath(__DIR__ . '/../src');
 if ($src_dir === false) {
@@ -169,6 +178,7 @@ $item = json_encode([
     'url'     => $url,
     'summary' => $_GET['summary'] ?? '',
     'source'  => $_GET['source']  ?? '',
+    'grid'    => $_GET['grid']    ?? '',
 ], JSON_UNESCAPED_UNICODE);
 
 // pass key explicitly so reason.py never needs to read .env itself

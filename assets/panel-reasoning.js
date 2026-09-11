@@ -46,9 +46,31 @@
     return 'conf-low';
   }
 
+  function formatItemTime(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    if (isNaN(d)) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const mon = months[d.getMonth()] || '';
+    const hr = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${mon} · ${hr}:${min} WIB`;
+  }
+
+  // PULSE: sumber (Lapak Aduan) mengirim judul huruf besar semua —
+  // tampilkan sentence case agar selaras dengan grid lain (data asli tak diubah)
+  function pulseSentenceCase(title) {
+    const m = String(title).match(/^\[([^\]]+)\]\s*(.*)$/s);
+    if (!m) return String(title);
+    const body = m[2];
+    return `[${m[1]}] ${body.charAt(0).toUpperCase()}${body.slice(1).toLowerCase()}`;
+  }
+
   function renderItems(grid, items) {
     const list = document.getElementById(`grid-${grid}`);
     if (!list) return;
+    const displayTitle = (grid === 'PULSE') ? pulseSentenceCase : (t) => t;
     if (!items || items.length === 0) {
       list.innerHTML = '<li class="empty-row" style="background:transparent;border:none;cursor:default"><span style="color:var(--muted);font-style:italic">Tidak ada item di grid ini untuk window saat ini.</span></li>';
       return;
@@ -56,17 +78,19 @@
     list.innerHTML = items
       .map((it, i) => {
         const conf = typeof it.confidence === 'number' ? it.confidence : 0.5;
-        const pub = it.published ? new Date(it.published).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '';
+        const pub = formatItemTime(it.published);
         const gridTag = grid.toLowerCase();
+        const srcText = (it.source || '').slice(0, 36);
+        const title = displayTitle(it.title);
         return `
         <li data-idx="${i}" data-title="${escapeHtml(it.title)}" data-url="${escapeHtml(it.url)}" data-summary="${escapeHtml(it.summary || '')}" data-source="${escapeHtml(it.source || '')}" data-grid="${grid}" data-gridtag="${gridTag}">
-          <div class="it-title">${escapeHtml(it.title)}</div>
+          <div class="it-title">${escapeHtml(title)}</div>
           ${it.blurb ? `<div class="it-blurb">${escapeHtml(it.blurb)}</div>` : ''}
           <div class="it-meta">
-            <span class="src">${escapeHtml((it.source || '').slice(0, 28))}</span>
+            <span class="src">${escapeHtml(srcText)}</span>
+            ${pub ? `<span>·</span><span>${escapeHtml(pub)}</span>` : ''}
             <span>·</span>
             <span class="${confClass(conf)}">conf ${Math.round(conf * 100)}%</span>
-            ${pub ? `<span>·</span><span>${escapeHtml(pub)}</span>` : ''}
             ${it.provider ? `<span class="prov-badge">${escapeHtml(it.provider)}</span>` : ''}
           </div>
         </li>`;
@@ -238,19 +262,212 @@
     return 'unknown';
   }
 
-  function renderInlineTrace(drawer, trace, fallbackTitle, fallbackUrl) {
-    const c = typeof trace.confidence === 'number' ? trace.confidence : 0;
-    const targetPct = Math.round(c * 100);
+  function getUrgensiClass(label) {
+    const l = (label || '').toLowerCase();
+    if (l.includes('sangat mendesak')) return 'urgensi-sangat-mendesak';
+    if (l.includes('mendesak')) return 'urgensi-mendesak';
+    if (l.includes('strategis')) return 'urgensi-strategis';
+    if (l.includes('signifikan')) return 'urgensi-signifikan';
+    return '';
+  }
 
+  function renderInlineTrace(drawer, trace, fallbackTitle, fallbackUrl) {
+    const c = typeof trace.confidence === 'number' ? trace.confidence : 0.8;
+    const targetPct = Math.round(c * 100);
+    const urgensiLabel = trace.urgensi_label || (targetPct >= 85 ? 'Sangat Mendesak' : (targetPct >= 70 ? 'Mendesak' : 'Strategis'));
+    const urgClass = getUrgensiClass(urgensiLabel);
+    const isIde1 = !!(trace.tldr || (trace.pihak_terkait && trace.pihak_terkait.length) || (trace.dampak_warga && trace.dampak_warga.length) || (trace.rekomendasi && trace.rekomendasi.length));
+
+    function typeIntoElement(el, text, baseSpeed = 12) {
+      return new Promise((resolve) => {
+        let i = 0;
+        const cursor = document.createElement('span');
+        cursor.className = 'type-cursor';
+        cursor.textContent = '▋';
+        el.appendChild(cursor);
+
+        function tick() {
+          if (!drawer.isConnected) {
+            cursor.remove();
+            el.textContent = text;
+            resolve();
+            return;
+          }
+          if (i < text.length) {
+            const char = text[i];
+            el.insertBefore(document.createTextNode(char), cursor);
+            i++;
+
+            let delay = baseSpeed;
+            if (char === '.' || char === '?' || char === '!') delay = baseSpeed * 2.8;
+            else if (char === ',' || char === ';' || char === ':') delay = baseSpeed * 1.6;
+            else if (char === ' ') delay = baseSpeed * 1.1;
+
+            setTimeout(tick, delay);
+          } else {
+            cursor.remove();
+            resolve();
+          }
+        }
+        tick();
+      });
+    }
+
+    function sleep(ms) {
+      return new Promise((r) => setTimeout(r, ms));
+    }
+
+    if (isIde1) {
+      drawer.innerHTML = `
+        <div class="inline-drawer-inner">
+          <div class="inline-meta-bar">
+            <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">sumber asli ↗</a>
+            <span>·</span>
+            <span>model ${escapeHtml(trace.model || 'bAIwor (MiniMax-M3)')}</span>
+            <span>·</span>
+            <span class="meta-urgensi ${urgClass}">${escapeHtml(urgensiLabel)}</span>
+            <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
+          </div>
+
+          <div class="reason-confidence">
+            <span class="rc-label">Tingkat Urgensi / Signifikansi Dampak</span>
+            <strong class="rc-num">0%</strong>
+            <span class="rc-bar" aria-hidden="true"><span class="rc-fill" style="width:0%"></span></span>
+          </div>
+
+          <!-- 1. Inti Masalah / TL;DR -->
+          <section class="reason-block block-tldr">
+            <h4>📌 Inti Masalah &amp; Situasi</h4>
+            <p class="tldr-text"></p>
+          </section>
+
+          <!-- 2. Pihak Terkait & Kewenangan -->
+          ${(trace.pihak_terkait && trace.pihak_terkait.length) ? `
+          <section class="reason-block block-pihak">
+            <h4>🏛️ Pihak Terkait &amp; Kewenangan (${trace.pihak_terkait.length} Instansi)</h4>
+            <div class="pihak-list"></div>
+          </section>` : ''}
+
+          <!-- 3. Dampak ke Warga & Wilayah -->
+          ${(trace.dampak_warga && trace.dampak_warga.length) ? `
+          <section class="reason-block block-dampak">
+            <h4>👥 Dampak ke Masyarakat &amp; Wilayah</h4>
+            <ul class="dampak-list"></ul>
+          </section>` : ''}
+
+          <!-- 4. Rekomendasi Solusi bAIwor -->
+          ${(trace.rekomendasi && trace.rekomendasi.length) ? `
+          <section class="reason-block block-rekomendasi">
+            <h4>⚡ Rekomendasi &amp; Solusi bAIwor</h4>
+            <ol class="rekomendasi-list"></ol>
+          </section>` : ''}
+
+          <!-- 5. Catatan Strategis bAIwor -->
+          ${trace.summary ? `
+          <section class="reason-block block-conclusion">
+            <h4>📋 Catatan Strategis bAIwor</h4>
+            <p class="summary-text"></p>
+          </section>` : ''}
+        </div>
+      `;
+
+      const fillEl = drawer.querySelector('.rc-fill');
+      const numEl = drawer.querySelector('.rc-num');
+      const tldrEl = drawer.querySelector('.tldr-text');
+      const pihakContainer = drawer.querySelector('.pihak-list');
+      const dampakUl = drawer.querySelector('.dampak-list');
+      const rekomOl = drawer.querySelector('.rekomendasi-list');
+      const sumEl = drawer.querySelector('.summary-text');
+      const closeBtn = drawer.querySelector('.drawer-close-btn');
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeAllDrawers();
+        });
+      }
+
+      async function runSequenceIde1() {
+        // 1. Animate Urgensi counter & bar smoothly
+        if (fillEl) fillEl.style.width = `${targetPct}%`;
+        let currentVal = 0;
+        const countInterval = setInterval(() => {
+          if (currentVal < targetPct) {
+            currentVal = Math.min(targetPct, currentVal + Math.ceil(targetPct / 15) || 1);
+            if (numEl) numEl.textContent = `${currentVal}%`;
+          } else {
+            if (numEl) numEl.textContent = `${targetPct}%`;
+            clearInterval(countInterval);
+          }
+        }, 20);
+
+        // 2. Stream TL;DR with typing effect
+        if (tldrEl) {
+          const tldrContent = trace.tldr || trace.summary || '—';
+          await typeIntoElement(tldrEl, tldrContent, 10);
+          await sleep(40);
+        }
+
+        // 3. Render Pihak Terkait cards
+        if (pihakContainer && drawer.isConnected) {
+          const pihak = trace.pihak_terkait || [];
+          for (const p of pihak) {
+            if (!drawer.isConnected) return;
+            const card = document.createElement('div');
+            card.className = 'pihak-card';
+            card.innerHTML = `
+              <div class="pihak-instansi">🏛️ ${escapeHtml(p.instansi || '')}</div>
+              <div class="pihak-peran">${escapeHtml(p.peran || '')}</div>
+            `;
+            pihakContainer.appendChild(card);
+            await sleep(60);
+          }
+        }
+
+        // 4. Render Dampak ke Warga items
+        if (dampakUl && drawer.isConnected) {
+          const dampak = trace.dampak_warga || [];
+          for (const d of dampak) {
+            if (!drawer.isConnected) return;
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="dampak-icon">⚠️</span> <span>${escapeHtml(d)}</span>`;
+            dampakUl.appendChild(li);
+            await sleep(50);
+          }
+        }
+
+        // 5. Render Rekomendasi Solusi bAIwor
+        if (rekomOl && drawer.isConnected) {
+          const rekom = trace.rekomendasi || [];
+          for (let i = 0; i < rekom.length; i++) {
+            if (!drawer.isConnected) return;
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>Langkah ${i + 1}</strong> <span>${escapeHtml(rekom[i])}</span>`;
+            rekomOl.appendChild(li);
+            await sleep(60);
+          }
+        }
+
+        // 6. Stream Summary / Catatan Akhir
+        if (sumEl && drawer.isConnected) {
+          await typeIntoElement(sumEl, trace.summary || '—', 8);
+        }
+      }
+
+      runSequenceIde1();
+      return;
+    }
+
+    // Fallback: Legacy trace rendering (if older plan & steps format)
     drawer.innerHTML = `
       <div class="inline-drawer-inner">
         <div class="inline-meta-bar">
-          <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">original source ↗</a>
+          <a href="${escapeHtml(trace.item_url || fallbackUrl || '#')}" target="_blank" rel="noopener noreferrer" class="src-link" onclick="event.stopPropagation()">sumber asli ↗</a>
           <span>·</span>
           <span>model ${escapeHtml(trace.model || 'MiniMax-M3')}</span>
           <span>·</span>
           <span>${(trace.steps || []).length} steps</span>
-          <button type="button" class="drawer-close-btn" aria-label="Close accordion">✕ Close</button>
+          <button type="button" class="drawer-close-btn" aria-label="Tutup accordion">✕ Tutup</button>
         </div>
 
         <div class="reason-confidence">
@@ -287,40 +504,16 @@
     const stepsOl = drawer.querySelector('.typewriter-steps-list');
     const sourcesUl = drawer.querySelector('.typewriter-sources-list');
     const sumEl = drawer.querySelector('.summary-text');
+    const closeBtn = drawer.querySelector('.drawer-close-btn');
 
-    let isSkipped = false;
-
-    // Full Instant Render (fallback / on skip)
-    function renderInstant() {
-      if (fillEl) fillEl.style.width = `${targetPct}%`;
-      if (numEl) numEl.textContent = `${targetPct}%`;
-
-      if (planOl) {
-        planOl.innerHTML = (trace.plan || []).map((p) => `<li>${escapeHtml(p)}</li>`).join('') || '<li class="empty">no plan recorded</li>';
-      }
-      if (stepsOl) {
-        stepsOl.innerHTML = (trace.steps || []).map((s) => `
-          <li>
-            <strong>${escapeHtml(s.action || '')}.</strong>
-            <span class="step-detail-text">${escapeHtml(s.detail || '')}</span>
-            <span class="step-outcome step-outcome-pop ${outcomeClass(s.outcome)}">${escapeHtml(s.outcome || 'unknown')}</span>
-          </li>`).join('') || '<li class="empty">no steps recorded</li>';
-      }
-      if (sourcesUl) {
-        sourcesUl.innerHTML = (trace.sources || []).map((s) => {
-          const safe = escapeHtml(s);
-          const isUrl = /^https?:\/\//i.test(s);
-          return `<li>${isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe}</li>`;
-        }).join('') || '<li class="empty">no sources cited</li>';
-      }
-      if (sumEl) {
-        sumEl.textContent = trace.summary || '—';
-      }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeAllDrawers();
+      });
     }
 
-    // Human-like Sequential Typewriter Streaming
-    async function runFullSequence() {
-      // 1. Animate Confidence counter & bar smoothly
+    async function runLegacySequence() {
       if (fillEl) fillEl.style.width = `${targetPct}%`;
       let currentVal = 0;
       const countInterval = setInterval(() => {
@@ -333,20 +526,18 @@
         }
       }, 25);
 
-      // 2. Stream Plans with human typing cadence
       const plans = trace.plan || [];
       for (const p of plans) {
-        if (isSkipped || !drawer.isConnected) return;
+        if (!drawer.isConnected) return;
         const li = document.createElement('li');
         planOl.appendChild(li);
-        await typeIntoElement(li, p, 18);
-        await sleep(60);
+        await typeIntoElement(li, p, 15);
+        await sleep(50);
       }
 
-      // 3. Stream Steps with human typing cadence
       const steps = trace.steps || [];
       for (const s of steps) {
-        if (isSkipped || !drawer.isConnected) return;
+        if (!drawer.isConnected) return;
         const li = document.createElement('li');
         const actionStr = s.action ? `${s.action}. ` : '';
         const detailStr = s.detail || '';
@@ -354,80 +545,36 @@
         stepsOl.appendChild(li);
 
         const txtSpan = li.querySelector('.step-txt');
-        await typeIntoElement(txtSpan, detailStr, 15);
+        await typeIntoElement(txtSpan, detailStr, 12);
 
-        // Pop badge after step detail finishes
-        if (!isSkipped && drawer.isConnected) {
+        if (drawer.isConnected) {
           const badge = document.createElement('span');
           badge.className = `step-outcome step-outcome-pop ${outcomeClass(s.outcome)}`;
           badge.textContent = s.outcome || 'unknown';
           li.appendChild(badge);
-          await sleep(100);
+          await sleep(80);
         }
       }
 
-      // 4. Render Sources smoothly
-      if (sourcesUl && !isSkipped && drawer.isConnected) {
+      if (sourcesUl && drawer.isConnected) {
         const sources = trace.sources || [];
         for (const s of sources) {
-          if (isSkipped || !drawer.isConnected) return;
+          if (!drawer.isConnected) return;
           const li = document.createElement('li');
           const safe = escapeHtml(s);
           const isUrl = /^https?:\/\//i.test(s);
           li.innerHTML = isUrl ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe} ↗</a>` : safe;
           sourcesUl.appendChild(li);
-          await sleep(60);
+          await sleep(50);
         }
       }
 
-      // 5. Stream Conclusion with human typing cadence
-      if (sumEl && !isSkipped && drawer.isConnected) {
-        await typeIntoElement(sumEl, trace.summary || '—', 18);
+      if (sumEl && drawer.isConnected) {
+        await typeIntoElement(sumEl, trace.summary || '—', 15);
       }
     }
 
-    function typeIntoElement(el, text, baseSpeed = 18) {
-      return new Promise((resolve) => {
-        let i = 0;
-        const cursor = document.createElement('span');
-        cursor.className = 'type-cursor';
-        cursor.textContent = '▋';
-        el.appendChild(cursor);
-
-        function tick() {
-          if (isSkipped || !drawer.isConnected) {
-            cursor.remove();
-            el.textContent = text;
-            resolve();
-            return;
-          }
-          if (i < text.length) {
-            const char = text[i];
-            el.insertBefore(document.createTextNode(char), cursor);
-            i++;
-
-            // Natural human typing rhythm (slight pauses at punctuation)
-            let delay = baseSpeed;
-            if (char === '.' || char === '?' || char === '!') delay = baseSpeed * 3.5;
-            else if (char === ',' || char === ';' || char === ':') delay = baseSpeed * 2;
-            else if (char === ' ') delay = baseSpeed * 1.2;
-
-            setTimeout(tick, delay);
-          } else {
-            cursor.remove();
-            resolve();
-          }
-        }
-        tick();
-      });
-    }
-
-    function sleep(ms) {
-      return new Promise((r) => setTimeout(r, ms));
-    }
-
-    // Start human typewriter sequence
-    runFullSequence();
+    runLegacySequence();
   }
 
   function closeAllDrawers() {
@@ -472,7 +619,7 @@
     drawer.innerHTML = `
       <div class="inline-drawer-inner">
         <div class="reason-loading" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);">
-          &gt; bAIwor engine: memuat data & menyusun verifikasi rencana<span class="type-cursor">▋</span>
+          &gt; bAIwor engine: memuat analisis kebijakan &amp; dampak warga<span class="type-cursor">▋</span>
         </div>
       </div>
     `;

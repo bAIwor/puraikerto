@@ -57,28 +57,34 @@ class TraceStep:
 class ReasoningTrace:
     item_title: str
     item_url: str
-    plan: list[str]                                # the plan before execution
-    steps: list[TraceStep] = field(default_factory=list)
-    sources: list[str] = field(default_factory=list)  # URLs that would be / were checked
+    tldr: str = ""
+    urgensi_label: str = ""
+    pihak_terkait: list[dict] = field(default_factory=list)
+    dampak_warga: list[str] = field(default_factory=list)
+    rekomendasi: list[str] = field(default_factory=list)
     confidence: float = 0.0
     summary: str = ""
     model: str = ""
     elapsed_ms: int = 0
     error: str = ""
+    plan: list[str] = field(default_factory=list)
+    steps: list[TraceStep] = field(default_factory=list)
+    sources: list[str] = field(default_factory=list)
 
 
 SYSTEM_PROMPT = (
-    "Kamu adalah bAIwor, AI agent yang memegang rencana dan self-faktanya terlihat. "
-    "Tugas: untuk sebuah klaim/berita AI, kamu membuat PLAN dulu, lalu "
-    "menjalankannya step-by-step. Setiap step WAJIB ada outcome yang jujur "
-    "(termasuk 'tidak yakin' / 'sumber tidak konfirmasi' / 'hanya 1 sumber, lemah'). "
-    "Output JSON object dengan key:\n"
-    "  plan: array of 3-5 langkah rencana (string)\n"
-    "  steps: array of {step, action, detail, outcome}  (step = int, mulai dari 1)\n"
-    "  sources: array of URL atau nama sumber yang dicek (string)\n"
-    "  confidence: 0..1 (float, jujur! 0.3 = lemah, 0.9 = sangat yakin)\n"
-    "  summary: 1-2 kalimat kesimpulan untuk user akhir\n"
-    "JANGAN mengarang URL palsu. Jika tidak yakin sebut 'unknown' di outcome."
+    "Kamu adalah bAIwor, AI Analis Kebijakan & Intelijen Publik Banyumas & Purwokerto. "
+    "Tugasmu: Menganalisis berita daerah, dinamika kampus, atau aduan warga dengan perspektif "
+    "tata kelola daerah, kewenangan dinas/OPD/institusi, dan dampak langsung terhadap masyarakat.\n"
+    "Hasilkan output JSON valid persis dengan key berikut:\n"
+    "  tldr: 1-2 kalimat padat inti persoalan, peristiwa, atau kebijakan (string)\n"
+    "  confidence: float 0.0 - 1.0 (skor urgensi penanganan / signifikansi dampak kebijakan)\n"
+    "  urgensi_label: string ('Sangat Mendesak' | 'Mendesak' | 'Strategis' | 'Signifikan' | 'Informatif')\n"
+    "  pihak_terkait: array of {instansi, peran} (sebutkan dinas/OPD Pemkab Banyumas seperti DPU, Dinhub, DLH, Satpol PP, Dinperkim, Disdik, Dinkes, atau Kampus seperti Unsoed, UMP, Amikom, Telkom Univ, dll beserta perannya)\n"
+    "  dampak_warga: array of string (poin dampak langsung terhadap keselamatan, mobilitas, ekonomi warga, mahasiswa, atau lingkungan sekitar)\n"
+    "  rekomendasi: array of string (rekomendasi taktis langkah cepat atau solusi kebijakan konkret dari bAIwor)\n"
+    "  summary: 2-3 kalimat evaluasi strategis bAIwor untuk publik dan pengambil kebijakan (string)\n"
+    "Gunakan perspektif lokal Banyumas/Purwokerto yang tajam, akurat, dan solutif."
 )
 
 
@@ -104,24 +110,23 @@ def _item_to_user(item: dict) -> str:
     title = _strip_html(item.get("title", "")).strip()
     url = item.get("url", "").strip()
     source = _strip_html(item.get("source", "")).strip()
-    summary = _strip_html(item.get("summary", "")).strip()[:600]
+    summary = _strip_html(item.get("summary", "")).strip()[:1000]
+    grid = item.get("grid", "")
     return (
-        f"Item untuk diverifikasi:\n"
-        f"Title: {title}\n"
+        f"Kategori Grid: {grid}\n"
+        f"Judul: {title}\n"
+        f"Sumber: {source}\n"
         f"URL: {url}\n"
-        f"Source: {source}\n"
-        f"Summary: {summary}\n\n"
-        f"Buat plan, jalankan step-by-step, dan akhiri dengan confidence + summary."
+        f"Konten/Laporan:\n{summary}\n\n"
+        f"Lakukan analisis kebijakan daerah, identifikasi OPD/pihak berwenang, dampak ke warga, dan rekomendasi taktis bAIwor."
     )
 
 
 def generate_trace(client: GMIClient, item: dict) -> ReasoningTrace:
-    """Generate a reasoning trace for a single item. Returns ReasoningTrace (with
-    `error` field set on failure — caller decides what to do)."""
+    """Generate a reasoning trace for a single item using Ide 1 (Analisis Kebijakan & Dampak Warga)."""
     trace = ReasoningTrace(
         item_title=item.get("title", ""),
         item_url=item.get("url", ""),
-        plan=[],
     )
     try:
         resp = client.chat_json(
@@ -129,7 +134,7 @@ def generate_trace(client: GMIClient, item: dict) -> ReasoningTrace:
                 ChatMessage("system", SYSTEM_PROMPT),
                 ChatMessage("user", _item_to_user(item)),
             ],
-            max_tokens=2200,
+            max_tokens=3500,
             temperature=0.2,
         )
     except GMIError as e:
@@ -137,60 +142,74 @@ def generate_trace(client: GMIClient, item: dict) -> ReasoningTrace:
         log.error(trace.error)
         return trace
 
-    plan_raw = resp.get("plan", [])
-    if isinstance(plan_raw, list):
-        trace.plan = [str(x).strip() for x in plan_raw if str(x).strip()]
+    trace.tldr = str(resp.get("tldr", "")).strip()
+    trace.urgensi_label = str(resp.get("urgensi_label", "")).strip() or "Analisis Kebijakan"
 
-    steps_raw = resp.get("steps", [])
-    for s in steps_raw if isinstance(steps_raw, list) else []:
-        try:
-            trace.steps.append(
-                TraceStep(
-                    step=int(s.get("step", 0)),
-                    action=str(s.get("action", "")).strip(),
-                    detail=str(s.get("detail", "")).strip(),
-                    outcome=str(s.get("outcome", "")).strip(),
-                )
-            )
-        except (ValueError, TypeError, AttributeError):
-            continue
+    pihak_raw = resp.get("pihak_terkait", [])
+    if isinstance(pihak_raw, list):
+        for p in pihak_raw:
+            if isinstance(p, dict):
+                inst = str(p.get("instansi", "")).strip()
+                peran = str(p.get("peran", "")).strip()
+                if inst:
+                    trace.pihak_terkait.append({"instansi": inst, "peran": peran})
 
-    sources_raw = resp.get("sources", [])
-    if isinstance(sources_raw, list):
-        trace.sources = [str(x).strip() for x in sources_raw if str(x).strip()]
+    dampak_raw = resp.get("dampak_warga", [])
+    if isinstance(dampak_raw, list):
+        trace.dampak_warga = [str(x).strip() for x in dampak_raw if str(x).strip()]
 
-    # === FALLBACK: if M3 returned a plan but skipped execution (empty steps),
-    # promote plan steps so the user still sees a visible reasoning trace. ===
-    if trace.plan and not trace.steps:
-        for i, p in enumerate(trace.plan, 1):
-            trace.steps.append(TraceStep(
-                step=i,
-                action=p,
-                detail="",
-                outcome="planned",
-            ))
-        # also ensure at least 1 source (the article URL itself)
-        if not trace.sources:
-            src = item.get("url", "").strip()
-            if src:
-                trace.sources.append(src)
-            source_name = item.get("source", "").strip()
-            if source_name and source_name not in trace.sources:
-                trace.sources.append(source_name)
+    rekom_raw = resp.get("rekomendasi", [])
+    if isinstance(rekom_raw, list):
+        trace.rekomendasi = [str(x).strip() for x in rekom_raw if str(x).strip()]
 
     try:
         trace.confidence = float(resp.get("confidence", 0.0))
     except (ValueError, TypeError):
-        trace.confidence = 0.0
+        trace.confidence = 0.8
     trace.summary = str(resp.get("summary", "")).strip()
     trace.model = getattr(client, "model", "")
-    # elapsed not returned from chat_json directly; estimate if needed
+
+    # Backward compatibility: populate plan, steps, sources
+    if trace.pihak_terkait:
+        trace.plan = [
+            f"Identifikasi kewenangan ({len(trace.pihak_terkait)} OPD/instansi penanggung jawab)",
+            f"Analisis dampak masyarakat Banyumas ({len(trace.dampak_warga)} indikator risiko/dampak)",
+            f"Perumusan solusi taktis & rekomendasi kebijakan bAIwor ({len(trace.rekomendasi)} rekomendasi)",
+        ]
+        trace.steps = [
+            TraceStep(
+                step=1,
+                action="Identifikasi Kewenangan & OPD",
+                detail=", ".join([p["instansi"] for p in trace.pihak_terkait[:3]]),
+                outcome=trace.urgensi_label or "teridentifikasi",
+            ),
+            TraceStep(
+                step=2,
+                action="Penilaian Dampak Warga",
+                detail=trace.dampak_warga[0] if trace.dampak_warga else "Dampak masyarakat lokal dianalisis",
+                outcome="dianalisis",
+            ),
+            TraceStep(
+                step=3,
+                action="Rekomendasi Kebijakan bAIwor",
+                detail=trace.rekomendasi[0] if trace.rekomendasi else "Langkah strategis dirumuskan",
+                outcome="solutif",
+            ),
+        ]
+
+    # Source URL
+    src_url = item.get("url", "").strip()
+    if src_url:
+        trace.sources.append(src_url)
+    src_name = item.get("source", "").strip()
+    if src_name and src_name not in trace.sources:
+        trace.sources.append(src_name)
+
     return trace
 
 
 def trace_to_dict(t: ReasoningTrace) -> dict:
     d = asdict(t)
-    # ensure steps is list of dicts (asdict already does this)
     return d
 
 
@@ -268,7 +287,7 @@ def main() -> int:
     existing_urls = {
         t.get("item_url"): t
         for t in existing_cache.get("traces", [])
-        if isinstance(t, dict) and t.get("item_url") and not t.get("error") and t.get("steps")
+        if isinstance(t, dict) and t.get("item_url") and not t.get("error") and t.get("tldr")
     }
 
     traces_out = []

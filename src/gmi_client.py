@@ -226,9 +226,58 @@ class GMIClient:
                 text = text[4:]
             text = text.strip()
         try:
-            return json.loads(text)
-        except json.JSONDecodeError as e:
-            raise GMIError(f"json parse failed: {e}; raw={text[:300]}") from e
+            return json.loads(text, strict=False)
+        except json.JSONDecodeError:
+            try:
+                fixed = _repair_truncated_json(text)
+                return json.loads(fixed, strict=False)
+            except Exception as e:
+                raise GMIError(f"json parse failed: {e}; raw={text[:300]}") from e
+
+
+def _repair_truncated_json(text: str) -> str:
+    """Best-effort repair of truncated JSON (e.g. hitting token limits)."""
+    text = text.strip()
+    # Close dangling open quotes
+    escaped = False
+    in_q = False
+    for c in text:
+        if c == "\\" and not escaped:
+            escaped = True
+            continue
+        if c == '"' and not escaped:
+            in_q = not in_q
+        escaped = False
+    if in_q:
+        text += '"'
+
+    # Balance opening brackets and braces
+    stack = []
+    in_q = False
+    esc = False
+    for c in text:
+        if c == "\\" and not esc:
+            esc = True
+            continue
+        if c == '"' and not esc:
+            in_q = not in_q
+        elif not in_q:
+            if c in "{[":
+                stack.append(c)
+            elif c == "}" and stack and stack[-1] == "{":
+                stack.pop()
+            elif c == "]" and stack and stack[-1] == "[":
+                stack.pop()
+        esc = False
+
+    while stack:
+        open_c = stack.pop()
+        text = text.rstrip(", \t\n\r")
+        if open_c == "{":
+            text += "}"
+        elif open_c == "[":
+            text += "]"
+    return text
 
 
 # convenience module-level instance for one-off scripts

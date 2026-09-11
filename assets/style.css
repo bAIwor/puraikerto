@@ -10,7 +10,7 @@
   --border: #000000;
   --fg:     #000000;
   --fg-dim: #222222;
-  --muted:  #aaaaaa;
+  --muted:  #555555;
 
   /* Grid accent colors — solid Google palette, unchanged */
   --lime:   #ff9900;
@@ -195,6 +195,9 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 
 @media (max-width: 768px) {
   .nav-dock { display: none; }
+  /* statusbar hemat ruang di mobile: item "window" disembunyikan
+     supaya strip muat satu baris dan sticky topbar tidak memakan layar */
+  .st-hide-sm { display: none; }
   .brief-wrap { padding: 0 10px; margin: 12px auto 0; }
   .brief-box { padding: 10px 12px; }
   .brief-text { font-size: 13px; }
@@ -285,12 +288,14 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   border-radius: 4px;
   padding: 10px 12px 10px 32px;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
   display: flex;
   flex-direction: column;
   gap: 3px;
   position: relative;
   counter-increment: pick;
+  /* garis aksen identitas grid, inset supaya tidak menggeser layout */
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 /* rank number */
 .grid-items li[data-idx]::before {
@@ -308,9 +313,30 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   background: #cccccc;
   border-color: #000000;
 }
+/* hover lift "kertas terangkat" — hanya untuk perangkat dengan pointer */
+@media (hover: hover) {
+  .grid-items li:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 #000000, inset 3px 0 0 var(--accent);
+  }
+}
+/* feedback sentuh untuk layar tanpa hover — item "tertek" saat ditekan */
+@media (hover: none) {
+  .grid-items li:active {
+    transform: translate(1px, 1px);
+    background: #cccccc;
+    border-color: #000000;
+    box-shadow: inset 3px 0 0 #000000;
+  }
+}
 .grid-items li:hover::before { color: #000000; }
 .grid-items li + li { border-top-color: transparent; }
 .grid-items .it-title { font-size: 14px; font-weight: 700; line-height: 1.45; color: #000000; text-wrap: pretty; }
+/* headline: item teratas tiap grid jadi pembuka yang lebih besar */
+.grid-items li[data-idx="0"] { padding-top: 12px; }
+.grid-items li[data-idx="0"] .it-title { font-size: 17px; font-weight: 800; line-height: 1.35; }
+.grid-items li[data-idx="0"] .it-blurb { font-size: 12.5px; }
+.grid-items li[data-idx="0"]::before { font-size: 13px; top: 12px; }
 .grid-items .it-blurb { font-size: 12px; color: #333333; line-height: 1.5; }
 .grid-items .it-meta {
   display: flex;
@@ -553,17 +579,146 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
 }
 .inline-drawer-inner .summary-text {
   margin: 0;
-  font-size: 14.5px;
-  line-height: 1.65;
+  font-size: 13.5px;
+  line-height: 1.6;
   color: #000000;
-  font-weight: 700;
-  padding: 14px 16px;
+  font-weight: 500;
+  padding: 12px 14px;
   background: var(--card);
-  border: 2px solid #000000;
-  border-left: 6px solid #000000;
+  border: 1.5px solid #000000;
+  border-left: 5px solid #000000;
   border-radius: 4px;
   font-family: var(--font-body);
   min-height: 38px;
+}
+
+/* ---------- Ide 1: Analisis Kebijakan & Dampak Warga ---------- */
+.inline-drawer-inner .block-tldr .tldr-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 600;
+  color: #000000;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-left: 5px solid #000000;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+}
+
+.inline-drawer-inner .pihak-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inline-drawer-inner .pihak-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: drawer-fade-up 0.25s ease-out;
+}
+.inline-drawer-inner .pihak-instansi {
+  font-size: 13px;
+  font-weight: 800;
+  color: #000000;
+  font-family: var(--font-mono);
+}
+.inline-drawer-inner .pihak-peran {
+  font-size: 12.5px;
+  color: #222222;
+  line-height: 1.5;
+}
+
+.inline-drawer-inner .dampak-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inline-drawer-inner .dampak-list li {
+  background: #fff8f8;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111111;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  animation: drawer-fade-up 0.25s ease-out;
+}
+.inline-drawer-inner .dampak-list li .dampak-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.inline-drawer-inner .rekomendasi-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inline-drawer-inner .rekomendasi-list li {
+  background: #f6fbf7;
+  border: 1.5px solid var(--border);
+  border-left: 5px solid #15803d;
+  border-radius: 4px;
+  padding: 9px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111111;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: drawer-fade-up 0.25s ease-out;
+}
+.inline-drawer-inner .rekomendasi-list li strong {
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #15803d;
+  font-weight: 800;
+}
+
+.meta-urgensi {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  color: var(--border);
+}
+.meta-urgensi.urgensi-mendesak, .meta-urgensi.urgensi-sangat-mendesak {
+  border-color: #d9381e;
+  color: #d9381e;
+  background: #fff0f0;
+}
+.meta-urgensi.urgensi-strategis {
+  border-color: #005bb5;
+  color: #005bb5;
+  background: #f0f7ff;
+}
+.meta-urgensi.urgensi-signifikan {
+  border-color: #b45309;
+  color: #b45309;
+  background: #fffbf0;
 }
 
 .type-cursor {
@@ -606,6 +761,10 @@ a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
   .grid-items .it-title {
     font-size: 14.5px;
     line-height: 1.45;
+  }
+  .grid-items li[data-idx="0"] .it-title {
+    font-size: 16px;
+    line-height: 1.4;
   }
   .inline-reason-drawer {
     margin-top: 8px;
