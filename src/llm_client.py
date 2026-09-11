@@ -162,6 +162,28 @@ class LLMClient:
 
         raise last_err
 
+    def chat_json(
+        self,
+        messages: list[ChatMessage],
+        *,
+        temperature: float = 0.3,
+        max_tokens: int = 4096,
+    ) -> dict:
+        """
+        Like chat(), but forces JSON mode and parses the response into a dict.
+        Raises LLMError if response is not valid JSON.
+        """
+        raw = self.chat(messages, json_mode=True, temperature=temperature, max_tokens=max_tokens)
+        # Strip markdown code fences if model wraps JSON in ```json ... ```
+        text = raw.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[-1]
+            text = text.rsplit("```", 1)[0]
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as e:
+            raise LLMError(f"response is not valid JSON: {e} — {raw[:200]}")
+
 
 # Alias so existing code using GMIClient still works
 GMIClient = LLMClient
