@@ -34,7 +34,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Iterator
 
-from gmi_client import GMIClient, ChatMessage, GMIError
+from llm_client import GMIClient, ChatMessage, GMIError
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO"),

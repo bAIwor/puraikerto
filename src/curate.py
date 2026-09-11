@@ -35,7 +35,7 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from gmi_client import GMIClient, ChatMessage, GMIError
+from llm_client import GMIClient, ChatMessage, GMIError
 from sources import (
     SIGNAL_FEEDS,
     SIGNAL_QUERIES,
